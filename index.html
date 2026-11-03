@@ -1,0 +1,555 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NP Cards Store</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+ font-family:Arial,sans-serif;
+ background:#090d18;color:white;
+}
+header{
+ background:#111a2d;
+ padding:17px;
+ display:flex;align-items:center;
+ justify-content:space-between;
+ flex-wrap:wrap;gap:12px;
+ position:sticky;top:0;z-index:10;
+}
+.logo{font-size:25px;font-weight:bold;color:#48c9ff}
+.logo span{color:white}
+button{
+ border:0;padding:11px 16px;
+ border-radius:8px;cursor:pointer;
+ font-weight:bold;
+}
+.search{
+ width:100%;max-width:450px;
+ padding:12px;border-radius:8px;
+ border:0;outline:none;
+}
+.hero{
+ padding:35px 20px;text-align:center;
+ background:linear-gradient(120deg,#12294b,#34215c);
+}
+.hero h1{font-size:32px;margin-bottom:10px}
+.hero p{color:#d2d8e8}
+.categories{
+ display:flex;justify-content:center;
+ gap:12px;padding:20px;flex-wrap:wrap;
+}
+.cat{
+ background:#1b2942;color:white;
+ border:1px solid #405678;
+}
+.cat.active{background:#168bd1}
+.container{padding:15px;max-width:1200px;margin:auto}
+.heading{margin:15px 0 20px}
+.products{
+ display:grid;
+ grid-template-columns:repeat(auto-fill,minmax(165px,1fr));
+ gap:16px;
+}
+.card{
+ background:#151f32;border:1px solid #293c58;
+ border-radius:12px;overflow:hidden;
+}
+.card img{
+ width:100%;height:190px;
+ object-fit:cover;background:#222;
+}
+.card-info{padding:12px}
+.card h3{font-size:16px;margin-bottom:8px}
+.price{color:#4bd5ff;font-size:19px;font-weight:bold;margin:10px 0}
+.pid{color:#9caac0;font-size:12px}
+.card button{width:100%;margin-top:7px}
+.add{background:#f5b928;color:#111}
+.buy{background:#168bd1;color:white}
+.secondary{background:#263750;color:white}
+.panel{
+ display:none;background:#151f32;
+ padding:20px;border-radius:12px;
+ margin:20px auto;max-width:650px;
+ border:1px solid #405678;
+}
+.panel input,.panel select,.panel textarea{
+ width:100%;padding:12px;margin:8px 0;
+ border-radius:7px;border:1px solid #405678;
+ background:#0b1424;color:white;
+}
+.panel button{margin:5px 0}
+.admin-btn{background:#273b58;color:white}
+.cart-item{
+ display:flex;justify-content:space-between;
+ align-items:center;gap:10px;
+ padding:12px 0;border-bottom:1px solid #34445a;
+}
+.cart-item button{padding:7px}
+.total{font-size:22px;margin:18px 0}
+.green{background:#16a36b;color:white}
+footer{
+ background:#111a2d;padding:25px;
+ text-align:center;margin-top:35px;
+ color:#b8c4d8;
+}
+.hidden{display:none!important}
+.notice{color:#9fb2cd;font-size:13px;margin:10px 0}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div class="logo">NP <span>Cards Store</span></div>
+ <input class="search" id="search"
+ placeholder="Search Naruto or Pokemon Cards..."
+ oninput="renderProducts()">
+ <button class="admin-btn" onclick="showCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
+</header>
+
+<section class="hero">
+ <h1>Welcome to NP Cards Store</h1>
+ <p>Discover Your Favourite Anime Cards!</p>
+ <p>Pokémon ⚡ | Naruto 🍥</p>
+</section>
+
+<div class="categories">
+ <button class="cat active" onclick="setCategory('All',this)">All Cards</button>
+ <button class="cat" onclick="setCategory('Pokemon',this)">⚡ Pokémon</button>
+ <button class="cat" onclick="setCategory('Naruto',this)">🍥 Naruto</button>
+</div>
+
+<main class="container" id="store">
+ <h2 class="heading">🔥 Latest Cards</h2>
+ <div class="products" id="products"></div>
+</main>
+
+<!-- CART -->
+<section class="panel" id="cartPanel">
+ <h2>🛒 Your Cart</h2>
+ <div id="cartItems"></div>
+ <div class="total" id="cartTotal"></div>
+ <button class="buy" onclick="checkout()">Proceed to Checkout</button>
+ <button class="secondary" onclick="closePanels()">Continue Shopping</button>
+</section>
+
+<!-- CHECKOUT -->
+<section class="panel" id="checkoutPanel">
+ <h2>📦 Delivery Details</h2>
+ <p class="notice">Payment method: Cash on Delivery only.</p>
+
+ <form id="orderForm">
+  <input id="customer" placeholder="Your Full Name" required>
+  <input id="phone" type="tel" placeholder="Mobile Number" pattern="[0-9]{10}" required>
+  <textarea id="address" placeholder="Full House Address" required></textarea>
+  <input id="city" placeholder="City" required>
+  <input id="pincode" placeholder="PIN Code" pattern="[0-9]{6}" required>
+  <button class="green" type="submit">Confirm COD Order</button>
+ </form>
+ <button class="secondary" onclick="closePanels()">Back</button>
+</section>
+
+<!-- SUCCESS -->
+<section class="panel" id="successPanel">
+ <h2 style="color:#38df9a">✅ Order Successful!</h2>
+ <p>Your order details are ready.</p>
+ <p id="orderSummary" style="margin:15px 0"></p>
+ <p class="notice">Click below to send your order details directly on WhatsApp.</p>
+ <button class="green" onclick="sendOrderWhatsApp()">
+  💬 Chat on WhatsApp – Send Order
+ </button>
+ <button class="secondary" onclick="location.reload()">Back to Store</button>
+</section>
+
+<!-- ADMIN LOGIN -->
+<section class="panel" id="loginPanel">
+ <h2>🔐 Admin Login</h2>
+ <input type="password" id="adminPass" placeholder="Admin Password">
+ <button class="buy" onclick="login()">Login</button>
+ <button class="secondary" onclick="closePanels()">Close</button>
+</section>
+
+<!-- ADMIN PANEL -->
+<section class="panel" id="adminPanel">
+ <h2>⚙️ NP Admin Panel</h2>
+ <h3 style="margin-top:20px">Upload New Product</h3>
+
+ <input id="pname" placeholder="Product Name">
+ <input id="pprice" type="number" min="1" placeholder="Product Price (₹)">
+ <select id="pcategory">
+  <option value="Pokemon">Pokémon Cards</option>
+  <option value="Naruto">Naruto Cards</option>
+ </select>
+ <input id="pimage" type="file" accept="image/*">
+ <input id="pimageurl" placeholder="Or Image URL (optional)">
+ <button class="green" onclick="addProduct()">+ Upload Product</button>
+
+ <h3 style="margin:25px 0 10px">Manage Products</h3>
+ <div id="adminProducts"></div>
+
+ <button class="secondary" onclick="logout()">Logout</button>
+</section>
+
+<footer>
+ <h3>NP Cards Store</h3>
+ <p>Pokémon & Naruto Cards Collection</p>
+ <p style="margin:12px">Need Help?</p>
+ <button class="buy" onclick="contactSupport()">Contact Support</button>
+ <p class="notice" style="margin-top:20px">© 2026 NP Cards Store</p>
+</footer>
+
+<script>
+
+// ================= CONFIG =================
+
+// Replace with your WhatsApp number.
+// Example: 919876543210
+const WHATSAPP_NUMBER = "918976034412";
+
+// Change this admin password before publishing.
+// IMPORTANT: Frontend password is not secure.
+const ADMIN_PASSWORD = "PRONPSTORE1234";
+
+// ==========================================
+
+let products = JSON.parse(localStorage.getItem("np_products")) || [
+ {
+  id:"NP101",name:"Pikachu Card",
+  price:99,category:"Pokemon",
+  image:"https://placehold.co/400x400/172b45/ffffff?text=Pikachu"
+ },
+ {
+  id:"NP102",name:"Charizard Card",
+  price:149,category:"Pokemon",
+  image:"https://placehold.co/400x400/172b45/ffffff?text=Charizard"
+ },
+ {
+  id:"NP103",name:"Naruto Uzumaki Card",
+  price:99,category:"Naruto",
+  image:"https://placehold.co/400x400/172b45/ffffff?text=Naruto"
+ },
+ {
+  id:"NP104",name:"Sasuke Uchiha Card",
+  price:129,category:"Naruto",
+  image:"https://placehold.co/400x400/172b45/ffffff?text=Sasuke"
+ }
+];
+
+let cart = [];
+let category = "All";
+let currentOrder = null;
+
+function saveProducts(){
+ localStorage.setItem("np_products",JSON.stringify(products));
+}
+
+function renderProducts(){
+ let search=document.getElementById("search").value.toLowerCase();
+
+ let list=products.filter(p=>
+  (category==="All"||p.category===category) &&
+  p.name.toLowerCase().includes(search)
+ );
+
+ document.getElementById("products").innerHTML =
+ list.length ? list.map(p=>`
+ <div class="card">
+  <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}"
+   onerror="this.src='https://placehold.co/400?text=Card'">
+  <div class="card-info">
+   <h3>${escapeHTML(p.name)}</h3>
+   <div class="pid">Product ID: ${escapeHTML(p.id)}</div>
+   <div class="price">₹${Number(p.price)}</div>
+   <button class="add" onclick="addCart('${p.id}')">Add to Cart</button>
+   <button class="buy" onclick="buyNow('${p.id}')">Buy Now</button>
+  </div>
+ </div>
+ `).join("") : "<p>No products found.</p>";
+}
+
+function escapeHTML(value){
+ return String(value).replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",
+  '"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function setCategory(c,btn){
+ category=c;
+ document.querySelectorAll(".cat").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");
+ renderProducts();
+}
+
+function addCart(id){
+ let p=products.find(x=>x.id===id);
+ if(!p)return;
+ let item=cart.find(x=>x.id===id);
+ if(item)item.qty++;
+ else cart.push({...p,qty:1});
+ updateCart();
+ alert("Added to cart!");
+}
+
+function buyNow(id){
+ let p=products.find(x=>x.id===id);
+ if(!p)return;
+ cart=[{...p,qty:1}];
+ updateCart();
+ checkout();
+}
+
+function updateCart(){
+ document.getElementById("cartCount").innerText=
+ cart.reduce((s,x)=>s+x.qty,0);
+}
+
+function showCart(){
+ closePanels();
+ document.getElementById("cartPanel").style.display="block";
+ renderCart();
+}
+
+function renderCart(){
+ let html=cart.map(p=>`
+ <div class="cart-item">
+  <div>
+   <b>${escapeHTML(p.name)}</b>
+   <div class="pid">${escapeHTML(p.id)}</div>
+   ₹${p.price} × ${p.qty}
+  </div>
+  <div>
+   <button class="add" onclick="changeQty('${p.id}',-1)">−</button>
+   <button class="add" onclick="changeQty('${p.id}',1)">+</button>
+   <button class="secondary" onclick="removeItem('${p.id}')">✕</button>
+  </div>
+ </div>
+ `).join("");
+
+ document.getElementById("cartItems").innerHTML=
+ html || "<p>Your cart is empty.</p>";
+
+ let total=cart.reduce((s,p)=>s+p.price*p.qty,0);
+ document.getElementById("cartTotal").innerText="Total: ₹"+total;
+}
+
+function changeQty(id,n){
+ let p=cart.find(x=>x.id===id);
+ if(!p)return;
+ p.qty+=n;
+ if(p.qty<=0)removeItem(id);
+ else renderCart();
+ updateCart();
+ renderCart();
+}
+
+function removeItem(id){
+ cart=cart.filter(x=>x.id!==id);
+ updateCart();
+ renderCart();
+}
+
+function checkout(){
+ if(!cart.length){
+  alert("Your cart is empty!");
+  return;
+ }
+ closePanels();
+ document.getElementById("checkoutPanel").style.display="block";
+}
+
+function closePanels(){
+ ["cartPanel","checkoutPanel","successPanel",
+ "loginPanel","adminPanel"].forEach(id=>{
+  document.getElementById(id).style.display="none";
+ });
+}
+
+document.getElementById("orderForm").addEventListener("submit",function(e){
+ e.preventDefault();
+
+ if(!cart.length){
+  alert("Cart is empty!");
+  return;
+ }
+
+ let total=cart.reduce((s,p)=>s+p.price*p.qty,0);
+
+ currentOrder={
+  orderID:"NP"+Date.now().toString().slice(-8),
+  customer:document.getElementById("customer").value.trim(),
+  phone:document.getElementById("phone").value.trim(),
+  address:document.getElementById("address").value.trim(),
+  city:document.getElementById("city").value.trim(),
+  pincode:document.getElementById("pincode").value.trim(),
+  items:cart.map(p=>({...p})),
+  total:total
+ };
+
+ document.getElementById("orderSummary").innerHTML=
+ "Order ID: "+escapeHTML(currentOrder.orderID)+
+ "<br>Total: ₹"+total+
+ "<br>Payment: Cash on Delivery";
+
+ closePanels();
+ document.getElementById("successPanel").style.display="block";
+ cart=[];
+ updateCart();
+ this.reset();
+});
+
+function sendOrderWhatsApp(){
+ if(!currentOrder)return;
+
+ let o=currentOrder;
+ let itemText=o.items.map(p=>
+  p.name+" | ID: "+p.id+
+  " | Qty: "+p.qty+
+  " | ₹"+(p.price*p.qty)
+ ).join("\n");
+
+ let msg=
+ "NEW ORDER - NP CARDS STORE\n\n"+
+ "Order ID: "+o.orderID+"\n"+
+ "Customer: "+o.customer+"\n"+
+ "Mobile: "+o.phone+"\n\n"+
+ "PRODUCTS:\n"+itemText+
+ "\n\nTOTAL: ₹"+o.total+
+ "\nPayment: Cash on Delivery"+
+ "\n\nDELIVERY ADDRESS:\n"+o.address+
+ "\n"+o.city+" - "+o.pincode;
+
+ openWhatsApp(msg);
+}
+
+function openWhatsApp(message){
+ if(!/^91[0-9]{10}$/.test(WHATSAPP_NUMBER)){
+  alert("Admin: Please add your correct WhatsApp number in the HTML configuration.");
+  return;
+ }
+ window.open(
+  "https://wa.me/"+WHATSAPP_NUMBER+
+  "?text="+encodeURIComponent(message),
+  "_blank"
+ );
+}
+
+function contactSupport(){
+ openWhatsApp("Hello NP Cards Store! I need help.");
+}
+
+// ADMIN
+
+function showAdmin(){
+ closePanels();
+ document.getElementById("loginPanel").style.display="block";
+}
+
+function login(){
+ if(document.getElementById("adminPass").value===ADMIN_PASSWORD){
+  closePanels();
+  document.getElementById("adminPanel").style.display="block";
+  renderAdmin();
+ }else{
+  alert("Wrong Password!");
+ }
+}
+
+function logout(){
+ closePanels();
+ alert("Logged out!");
+}
+
+function addProduct(){
+ let name=document.getElementById("pname").value.trim();
+ let price=Number(document.getElementById("pprice").value);
+ let cat=document.getElementById("pcategory").value;
+ let file=document.getElementById("pimage").files[0];
+ let url=document.getElementById("pimageurl").value.trim();
+
+ if(!name||!Number.isFinite(price)||price<=0){
+  alert("Enter valid product name and price.");
+  return;
+ }
+
+ if(file){
+  if(!file.type.startsWith("image/")){
+   alert("Please select an image.");
+   return;
+  }
+  let reader=new FileReader();
+  reader.onload=function(){
+   saveNewProduct(name,price,cat,reader.result);
+  };
+  reader.readAsDataURL(file);
+ }else if(url){
+  saveNewProduct(name,price,cat,url);
+ }else{
+  alert("Please select a product image or enter image URL.");
+ }
+}
+
+function saveNewProduct(name,price,cat,image){
+ let p={
+  id:"NP"+Date.now().toString().slice(-8),
+  name:name,price:price,
+  category:cat,image:image
+ };
+
+ products.unshift(p);
+
+ try{
+  saveProducts();
+  alert("Product uploaded successfully!");
+  document.getElementById("pname").value="";
+  document.getElementById("pprice").value="";
+  document.getElementById("pimage").value="";
+  document.getElementById("pimageurl").value="";
+  renderProducts();
+  renderAdmin();
+ }catch(e){
+  products.shift();
+  alert("Storage full! Try a smaller image.");
+ }
+}
+
+function renderAdmin(){
+ document.getElementById("adminProducts").innerHTML=
+ products.map(p=>`
+ <div class="cart-item">
+  <div>
+   <b>${escapeHTML(p.name)}</b>
+   <p class="pid">${escapeHTML(p.id)} | ${escapeHTML(p.category)}</p>
+   ₹${p.price}
+  </div>
+  <button class="secondary" onclick="deleteProduct('${p.id}')">Delete</button>
+ </div>
+ `).join("");
+}
+
+function deleteProduct(id){
+ if(!confirm("Delete this product?"))return;
+ products=products.filter(p=>p.id!==id);
+ saveProducts();
+ renderProducts();
+ renderAdmin();
+}
+
+// Open admin with a keyboard shortcut:
+// Ctrl + Shift + A
+document.addEventListener("keydown",function(e){
+ if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==="a"){
+  showAdmin();
+ }
+});
+
+renderProducts();
+updateCart();
+
+</script>
+</body>
+</html>
