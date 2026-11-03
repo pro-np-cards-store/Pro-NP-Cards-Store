@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,20 +16,22 @@ header{background:#172337;color:white;padding:16px;display:flex;gap:12px;align-i
 .yellow{background:#ffbd32;color:#111}
 .dark{background:#263750;color:white}
 .green{background:#159b64;color:white}
+.red{background:#d94343;color:white}
 .categories{display:flex;justify-content:center;gap:12px;padding:18px;flex-wrap:wrap}
 .cat{background:#243650;color:white}
 .cat.active{background:#168bd1}
 .container{max-width:1200px;margin:auto;padding:20px}
 h2.heading{margin:15px 0 20px}
 .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px}
-.card{background:white;border:1px solid #ddd;border-radius:10px;overflow:hidden;cursor:pointer}
+.card{background:white;border:1px solid #ddd;border-radius:10px;overflow:hidden;cursor:pointer;position:relative}
 .card img{width:100%;height:220px;object-fit:contain;background:#fff;padding:8px}
 .card-info{padding:15px}
 .card h3{font-size:17px;min-height:40px}
 .price{font-size:22px;color:#168bd1;font-weight:bold;margin:12px 0}
+.old-price{text-decoration:line-through;color:#888;font-size:14px;margin-right:6px}
 .pid{font-size:12px;color:#777;margin-top:7px}
 .card button{width:100%;margin-top:8px}
-.panel{display:none;background:white;padding:20px;border-radius:12px;margin:20px auto;max-width:650px;border:1px solid #ddd}
+.panel{display:none;background:white;padding:20px;border-radius:12px;margin:20px auto;max-width:750px;border:1px solid #ddd}
 .panel input,.panel select,.panel textarea{
  width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:7px
 }
@@ -40,12 +41,12 @@ h2.heading{margin:15px 0 20px}
 .notice{font-size:13px;color:#777;margin:10px 0}
 footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:35px}
 .hidden{display:none!important}
+.badge{position:absolute;top:9px;left:9px;background:#ffbd32;color:#111;padding:6px 9px;border-radius:5px;font-size:11px;font-weight:bold}
+.new-badge{background:#159b64;color:white}
+.discount-badge{background:#d94343;color:white;left:auto;right:9px}
 
 /* PRODUCT DETAILS */
-.modal{
- display:none;position:fixed;inset:0;background:#fff;
- z-index:100;padding:18px;overflow-y:auto
-}
+.modal{display:none;position:fixed;inset:0;background:#fff;z-index:100;padding:18px;overflow-y:auto}
 .modal-box{max-width:1100px;margin:15px auto}
 .close{background:#263750;color:white;margin-bottom:20px}
 .detail-layout{display:grid;grid-template-columns:1.1fr 1fr;gap:30px}
@@ -62,6 +63,39 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 .detail-actions{display:flex;gap:10px;flex-wrap:wrap}
 .detail-actions button{flex:1}
 .modal .notice{margin-top:15px}
+
+/* SMALL FLOATING SPIN BUTTON */
+#spinFloat{
+ position:fixed;right:12px;top:48%;z-index:150;
+ width:62px;height:62px;border-radius:50%;
+ background:linear-gradient(135deg,#ffdc58,#ff8c00);
+ color:#222;border:3px solid white;
+ box-shadow:0 3px 15px #0005;font-size:13px;
+ padding:5px;display:none
+}
+
+/* WHEEL */
+#wheelModal{
+ display:none;position:fixed;inset:0;background:#0009;
+ z-index:200;align-items:center;justify-content:center;padding:15px
+}
+.wheel-box{background:white;padding:22px;border-radius:15px;width:100%;max-width:380px;text-align:center}
+#wheelCircle{
+ width:230px;height:230px;border-radius:50%;margin:20px auto;
+ border:8px solid #172337;
+ background:conic-gradient(#ffbd32 0 25%,#168bd1 25% 50%,#159b64 50% 75%,#e85d5d 75% 100%);
+ display:flex;align-items:center;justify-content:center;
+ color:white;font-size:22px;font-weight:bold;
+ box-shadow:0 4px 15px #0003;
+}
+#wheelCircle.spinning{animation:spinWheel 2.5s cubic-bezier(.15,.7,.2,1) forwards}
+@keyframes spinWheel{from{transform:rotate(0)}to{transform:rotate(1440deg)}}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:15px 0}
+.stat{background:#f1f5f9;padding:15px;border-radius:9px}
+.stat b{font-size:23px;display:block;color:#168bd1;margin-top:6px}
+.admin-section{border-top:1px solid #ddd;margin-top:22px;padding-top:18px}
+.order-card{border:1px solid #ddd;padding:13px;border-radius:8px;margin:10px 0}
+.status{font-weight:bold;color:#168bd1}
 @media(max-width:650px){
  .detail-layout{grid-template-columns:1fr}
  .main-photo{height:310px}
@@ -81,6 +115,7 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
  <div class="logo">NP Cards Store</div>
  <input class="search" id="search" placeholder="Search cards..." oninput="renderProducts()">
  <button class="yellow" onclick="showCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
+ <button class="dark" onclick="showTracking()">📦 Track Order</button>
  <button class="dark" onclick="showAdmin()">⚙️ Admin</button>
 </header>
 
@@ -97,9 +132,15 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 </div>
 
 <main class="container" id="store">
+ <section id="newArrivalSection" class="hidden">
+  <h2 class="heading">✨ New Arrivals</h2>
+  <div class="products" id="newArrivals"></div>
+ </section>
  <h2 class="heading">🔥 Explore Cards</h2>
  <div class="products" id="products"></div>
 </main>
+
+<button id="spinFloat" onclick="openWheel()">🎡<br>SPIN</button>
 
 <!-- PRODUCT DETAILS -->
 <div class="modal" id="photoModal">
@@ -112,8 +153,7 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
       <img id="thumbFront" onclick="switchPhoto('front')">
       <img id="thumbBack" onclick="switchPhoto('back')">
      </div>
-     <img id="mainProductPhoto" class="main-photo"
-      onclick="window.open(this.src,'_blank')">
+     <img id="mainProductPhoto" class="main-photo" onclick="window.open(this.src,'_blank')">
     </div>
     <p class="notice">Click photo to view full size</p>
    </div>
@@ -166,12 +206,21 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 
 <!-- SUCCESS -->
 <section class="panel" id="successPanel">
- <h2 style="color:green">✅ Order Successful!</h2>
+ <h2 style="color:green">✅ Order Created!</h2>
  <p style="margin:15px 0">Your order details are ready.</p>
  <p id="orderSummary"></p>
  <p class="notice">Click below to send your order details to WhatsApp.</p>
  <button class="green" onclick="sendOrderWhatsApp()">💬 Chat on WhatsApp – Send Order</button>
  <button class="dark" onclick="closePanels()">Back to Store</button>
+</section>
+
+<!-- ORDER TRACKING -->
+<section class="panel" id="trackingPanel">
+ <h2>📦 Track Your Order</h2>
+ <input id="trackID" placeholder="Enter your Order ID">
+ <button class="blue" onclick="trackOrder()">Track Order</button>
+ <div id="trackingResult"></div>
+ <button class="dark" onclick="closePanels()">Close</button>
 </section>
 
 <!-- ADMIN LOGIN -->
@@ -184,23 +233,67 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 
 <!-- ADMIN PANEL -->
 <section class="panel" id="adminPanel">
- <h2>⚙️ NP Admin Panel</h2>
- <h3 style="margin-top:20px">Upload New Product</h3>
- <input id="pname" placeholder="Product Title">
- <input id="pprice" type="number" min="1" placeholder="Product Price ₹">
- <select id="pcategory">
-  <option value="Pokemon">Pokémon Cards</option>
-  <option value="Naruto">Naruto Cards</option>
- </select>
- <label>Front Photo</label>
- <input id="pimage" type="file" accept="image/*">
- <label>Back Photo</label>
- <input id="pback" type="file" accept="image/*">
- <button class="green" onclick="addProduct()">+ Upload Product</button>
- <h3 style="margin:25px 0 10px">Manage Products</h3>
- <div id="adminProducts"></div>
+ <h2>⚙️ NP Admin Dashboard</h2>
+
+ <div class="stat-grid">
+  <div class="stat">Products<b id="statProducts">0</b></div>
+  <div class="stat">Orders<b id="statOrders">0</b></div>
+  <div class="stat">Pending Orders<b id="statPending">0</b></div>
+  <div class="stat">New Arrivals<b id="statNew">0</b></div>
+ </div>
+
+ <div class="admin-section">
+  <h3>📦 Upload New Product</h3>
+  <input id="pname" placeholder="Product Title">
+  <input id="pprice" type="number" min="1" placeholder="Product Price ₹">
+  <select id="pcategory">
+   <option value="Pokemon">Pokémon Cards</option>
+   <option value="Naruto">Naruto Cards</option>
+  </select>
+  <label>Front Photo</label>
+  <input id="pimage" type="file" accept="image/*">
+  <label>Back Photo</label>
+  <input id="pback" type="file" accept="image/*">
+  <button class="green" onclick="addProduct()">+ Upload Product</button>
+ </div>
+
+ <div class="admin-section">
+  <h3>🎡 Weekly Discount Wheel Settings</h3>
+  <p class="notice">Only one active wheel per week. Discount expires Sunday at 11:59 PM.</p>
+  <label>Select Product</label>
+  <select id="wheelProduct"></select>
+  <label>Fixed Discount Percentage (%)</label>
+  <input id="wheelPercent" type="number" min="1" max="90" placeholder="Example: 20">
+  <label><input type="checkbox" id="wheelActive" style="width:auto"> Activate this week's wheel</label>
+  <button class="blue" onclick="saveWheelSettings()">Save Wheel Settings</button>
+  <p id="wheelAdminInfo" class="notice"></p>
+ </div>
+
+ <div class="admin-section">
+  <h3>✨ New Arrival Management</h3>
+  <p class="notice">Use the button beside each product to mark or remove New Arrival.</p>
+  <div id="adminProducts"></div>
+ </div>
+
+ <div class="admin-section">
+  <h3>📋 Manage Orders</h3>
+  <div id="adminOrders"></div>
+ </div>
+
  <button class="dark" onclick="logout()">Logout</button>
 </section>
+
+<!-- DISCOUNT WHEEL POPUP -->
+<div id="wheelModal">
+ <div class="wheel-box">
+  <h2>🎡 Weekly Discount Wheel</h2>
+  <p id="wheelProductText" class="notice"></p>
+  <div id="wheelCircle">SPIN!</div>
+  <h3 id="wheelResult"></h3>
+  <button class="yellow" id="spinButton" onclick="spinWheel()">🎡 SPIN NOW</button>
+  <button class="dark" onclick="closeWheel()">Close</button>
+ </div>
+</div>
 
 <footer>
  <h3>NP Cards Store</h3>
@@ -210,7 +303,7 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 </footer>
 
 <script>
-// CONFIG - YOUR ORIGINAL DETAILS
+// ORIGINAL CONFIG - UNCHANGED
 const WHATSAPP_NUMBER = "918976034412";
 const ADMIN_PASSWORD = "PRONPSTORE1234";
 
@@ -228,15 +321,64 @@ let currentOrder=null;
 let detailProduct=null;
 let detailQuantity=1;
 
-function saveProducts(){
- localStorage.setItem("np_products",JSON.stringify(products));
-}
+let orders=JSON.parse(localStorage.getItem("np_orders")||"[]");
+let wheelSettings=JSON.parse(localStorage.getItem("np_wheel")||"null");
+let spinRecord=JSON.parse(localStorage.getItem("np_spin_record")||"null");
+
+function saveProducts(){localStorage.setItem("np_products",JSON.stringify(products))}
+function saveOrders(){localStorage.setItem("np_orders",JSON.stringify(orders))}
+function saveWheel(){localStorage.setItem("np_wheel",JSON.stringify(wheelSettings))}
 
 function escapeHTML(v){
  return String(v).replace(/[&<>"']/g,c=>({
- "&":"&amp;","<":"&lt;",">":"&gt;",
- '"':"&quot;","'":"&#39;"
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
  }[c]));
+}
+
+function getWeekKey(){
+ let d=new Date();
+ let day=(d.getDay()+6)%7;
+ d.setDate(d.getDate()-day);
+ return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+}
+
+function getWeekEnd(){
+ let d=new Date();
+ let day=d.getDay();
+ d.setDate(d.getDate()+(7-day)%7);
+ d.setHours(23,59,59,999);
+ return d;
+}
+
+function wheelIsActive(){
+ return wheelSettings &&
+ wheelSettings.active &&
+ wheelSettings.week===getWeekKey() &&
+ products.some(p=>p.id===wheelSettings.productId) &&
+ new Date()<getWeekEnd();
+}
+
+function hasSpunThisWeek(){
+ return spinRecord && spinRecord.week===getWeekKey();
+}
+
+function discountFor(id){
+ if(!wheelIsActive()||!hasSpunThisWeek())return 0;
+ if(wheelSettings.productId!==id)return 0;
+ return Number(wheelSettings.percent)||0;
+}
+
+function getPrice(p){
+ let discount=discountFor(p.id);
+ return Math.round(Number(p.price)*(100-discount))/100;
+}
+
+function priceHTML(p){
+ let discount=discountFor(p.id);
+ if(discount){
+  return '<span class="old-price">₹'+Number(p.price)+'</span>₹'+getPrice(p)+' <small style="color:#159b64">-'+discount+'%</small>';
+ }
+ return '₹'+Number(p.price);
 }
 
 function renderProducts(){
@@ -249,16 +391,35 @@ function renderProducts(){
  document.getElementById("products").innerHTML=list.length?
  list.map(p=>`
  <div class="card">
-  <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}"
-   onclick="openPhoto('${p.id}')">
+  ${p.newArrival?'<span class="badge new-badge">NEW ARRIVAL</span>':''}
+  ${discountFor(p.id)?'<span class="badge discount-badge">-'+discountFor(p.id)+'%</span>':''}
+  <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" onclick="openPhoto('${p.id}')">
   <div class="card-info">
    <h3 onclick="openPhoto('${p.id}')">${escapeHTML(p.name)}</h3>
    <div class="pid">Product ID: ${escapeHTML(p.id)}</div>
-   <div class="price">₹${Number(p.price)}</div>
+   <div class="price">${priceHTML(p)}</div>
    <button class="yellow" onclick="addCart('${p.id}')">Add to Cart</button>
    <button class="blue" onclick="buyNow('${p.id}')">Buy Now</button>
   </div>
  </div>`).join(""):"<p>No products found.</p>";
+
+ renderNewArrivals();
+}
+
+function renderNewArrivals(){
+ let list=products.filter(p=>p.newArrival);
+ let section=document.getElementById("newArrivalSection");
+ section.classList.toggle("hidden",!list.length);
+ document.getElementById("newArrivals").innerHTML=list.map(p=>`
+ <div class="card">
+  <span class="badge new-badge">NEW ARRIVAL</span>
+  <img src="${escapeHTML(p.image)}" onclick="openPhoto('${p.id}')">
+  <div class="card-info">
+   <h3 onclick="openPhoto('${p.id}')">${escapeHTML(p.name)}</h3>
+   <div class="price">${priceHTML(p)}</div>
+   <button class="blue" onclick="buyNow('${p.id}')">Buy Now</button>
+  </div>
+ </div>`).join("");
 }
 
 function setCategory(c,btn){
@@ -273,13 +434,11 @@ function openPhoto(id){
  detailProduct=products.find(p=>p.id===id);
  if(!detailProduct)return;
  detailQuantity=1;
-
  document.getElementById("detailName").innerText=detailProduct.name;
- document.getElementById("detailPrice").innerText="₹"+detailProduct.price;
+ document.getElementById("detailPrice").innerHTML=priceHTML(detailProduct);
  document.getElementById("detailID").innerText=detailProduct.id;
  document.getElementById("detailCategory").innerText=
  detailProduct.category==="Pokemon"?"Pokémon Cards":"Naruto Cards";
-
  document.getElementById("thumbFront").src=detailProduct.image;
  document.getElementById("thumbBack").src=detailProduct.back||detailProduct.image;
  document.getElementById("mainProductPhoto").src=detailProduct.image;
@@ -293,10 +452,7 @@ function switchPhoto(side){
  side==="front"?detailProduct.image:(detailProduct.back||detailProduct.image);
 }
 
-function closePhoto(){
- document.getElementById("photoModal").style.display="none";
-}
-
+function closePhoto(){document.getElementById("photoModal").style.display="none"}
 function changeDetailQty(n){
  detailQuantity=Math.max(1,Math.min(20,detailQuantity+n));
  document.getElementById("detailQty").innerText=detailQuantity;
@@ -304,29 +460,22 @@ function changeDetailQty(n){
 
 function detailAddCart(){
  if(!detailProduct)return;
- let item=cart.find(p=>p.id===detailProduct.id);
- if(item)item.qty+=detailQuantity;
- else cart.push({...detailProduct,qty:detailQuantity});
- updateCart();
+ addCart(detailProduct.id,detailQuantity);
  closePhoto();
- alert("Added to cart!");
 }
-
 function detailBuyNow(){
  if(!detailProduct)return;
  cart=[{...detailProduct,qty:detailQuantity}];
- updateCart();
- closePhoto();
- checkout();
+ updateCart();closePhoto();checkout();
 }
 
 // CART
-function addCart(id){
+function addCart(id,qty=1){
  let p=products.find(x=>x.id===id);
  if(!p)return;
  let item=cart.find(x=>x.id===id);
- if(item)item.qty++;
- else cart.push({...p,qty:1});
+ if(item)item.qty+=qty;
+ else cart.push({...p,qty});
  updateCart();
  alert("Added to cart!");
 }
@@ -335,13 +484,11 @@ function buyNow(id){
  let p=products.find(x=>x.id===id);
  if(!p)return;
  cart=[{...p,qty:1}];
- updateCart();
- checkout();
+ updateCart();checkout();
 }
 
 function updateCart(){
- document.getElementById("cartCount").innerText=
- cart.reduce((s,p)=>s+p.qty,0);
+ document.getElementById("cartCount").innerText=cart.reduce((s,p)=>s+p.qty,0);
 }
 
 function showCart(){
@@ -351,22 +498,26 @@ function showCart(){
 }
 
 function renderCart(){
- document.getElementById("cartItems").innerHTML=cart.map(p=>`
- <div class="cart-item">
-  <div>
-   <b>${escapeHTML(p.name)}</b>
+ document.getElementById("cartItems").innerHTML=cart.map(p=>{
+  let current=products.find(x=>x.id===p.id)||p;
+  let price=getPrice(current);
+  return `<div class="cart-item">
+   <div><b>${escapeHTML(p.name)}</b>
    <p class="pid">${escapeHTML(p.id)}</p>
-   ₹${p.price} × ${p.qty}
-  </div>
-  <div>
-   <button class="yellow" onclick="changeQty('${p.id}',-1)">−</button>
-   <button class="yellow" onclick="changeQty('${p.id}',1)">+</button>
-   <button class="dark" onclick="removeItem('${p.id}')">✕</button>
-  </div>
- </div>`).join("")||"<p>Your cart is empty.</p>";
+   ${priceHTML(current)} × ${p.qty}</div>
+   <div>
+    <button class="yellow" onclick="changeQty('${p.id}',-1)">−</button>
+    <button class="yellow" onclick="changeQty('${p.id}',1)">+</button>
+    <button class="dark" onclick="removeItem('${p.id}')">✕</button>
+   </div>
+  </div>`;
+ }).join("")||"<p>Your cart is empty.</p>";
 
  document.getElementById("cartTotal").innerText=
- "Total: ₹"+cart.reduce((s,p)=>s+p.price*p.qty,0);
+ "Total: ₹"+cart.reduce((s,p)=>{
+  let current=products.find(x=>x.id===p.id)||p;
+  return s+getPrice(current)*p.qty;
+ },0);
 }
 
 function changeQty(id,n){
@@ -377,25 +528,27 @@ function changeQty(id,n){
  else renderCart();
  updateCart();
 }
-
 function removeItem(id){
  cart=cart.filter(p=>p.id!==id);
- updateCart();
- renderCart();
+ updateCart();renderCart();
 }
-
 function checkout(){
  if(!cart.length){alert("Cart is empty!");return;}
  closePanels();
  document.getElementById("checkoutPanel").style.display="block";
 }
 
-// ORDER
+// ORDERS
 document.getElementById("orderForm").addEventListener("submit",function(e){
  e.preventDefault();
  if(!cart.length)return;
 
- let total=cart.reduce((s,p)=>s+p.price*p.qty,0);
+ let orderItems=cart.map(p=>{
+  let current=products.find(x=>x.id===p.id)||p;
+  let unitPrice=getPrice(current);
+  return {...p,price:unitPrice,originalPrice:Number(current.price)};
+ });
+ let total=orderItems.reduce((s,p)=>s+p.price*p.qty,0);
 
  currentOrder={
   orderID:"NP"+Date.now().toString().slice(-8),
@@ -404,19 +557,20 @@ document.getElementById("orderForm").addEventListener("submit",function(e){
   address:document.getElementById("address").value.trim(),
   city:document.getElementById("city").value.trim(),
   pincode:document.getElementById("pincode").value.trim(),
-  items:cart.map(p=>({...p})),
-  total
+  items:orderItems,total,status:"Pending",
+  date:new Date().toLocaleString()
  };
 
- document.getElementById("orderSummary").innerHTML=
- "Order ID: "+escapeHTML(currentOrder.orderID)+
- "<br>Total: ₹"+total+
- "<br>Payment: Cash on Delivery";
+ orders.unshift(currentOrder);
+ saveOrders();
 
- cart=[];
- updateCart();
- this.reset();
- closePanels();
+ document.getElementById("orderSummary").innerHTML=
+ "Order ID: <b>"+escapeHTML(currentOrder.orderID)+"</b>"+
+ "<br>Total: ₹"+total+
+ "<br>Payment: Cash on Delivery"+
+ "<br>Status: Pending";
+
+ cart=[];updateCart();this.reset();closePanels();
  document.getElementById("successPanel").style.display="block";
 });
 
@@ -424,8 +578,8 @@ function sendOrderWhatsApp(){
  if(!currentOrder)return;
  let o=currentOrder;
  let items=o.items.map(p=>
- p.name+" | ID: "+p.id+" | Qty: "+p.qty+
- " | ₹"+(p.price*p.qty)).join("\n");
+ p.name+" | ID: "+p.id+" | Qty: "+p.qty+" | ₹"+(p.price*p.qty)
+ ).join("\n");
 
  let msg="NEW ORDER - NP CARDS STORE\n\n"+
  "Order ID: "+o.orderID+
@@ -436,21 +590,40 @@ function sendOrderWhatsApp(){
  "\nPayment: Cash on Delivery"+
  "\n\nDELIVERY ADDRESS:\n"+o.address+
  "\n"+o.city+" - "+o.pincode;
-
  openWhatsApp(msg);
 }
 
 function openWhatsApp(message){
  if(!/^91[0-9]{10}$/.test(WHATSAPP_NUMBER)){
-  alert("Check WhatsApp number in configuration.");
-  return;
+  alert("Check WhatsApp number in configuration.");return;
  }
- window.open("https://wa.me/"+WHATSAPP_NUMBER+
- "?text="+encodeURIComponent(message),"_blank");
+ window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent(message),"_blank");
+}
+function contactSupport(){openWhatsApp("Hello NP Cards Store! I need help.");}
+
+// ORDER TRACKING
+function showTracking(){
+ closePanels();
+ document.getElementById("trackingPanel").style.display="block";
+ document.getElementById("trackingResult").innerHTML="";
 }
 
-function contactSupport(){
- openWhatsApp("Hello NP Cards Store! I need help.");
+function trackOrder(){
+ let id=document.getElementById("trackID").value.trim().toUpperCase();
+ let o=orders.find(x=>x.orderID.toUpperCase()===id);
+ let result=document.getElementById("trackingResult");
+ if(!o){
+  result.innerHTML='<p style="color:#d94343;margin:15px 0">Order not found in this browser.</p>';
+  return;
+ }
+ result.innerHTML=`
+ <div class="order-card">
+  <h3>Order ${escapeHTML(o.orderID)}</h3>
+  <p style="margin:10px 0">Date: ${escapeHTML(o.date||"")}</p>
+  <p class="status">Status: ${escapeHTML(o.status)}</p>
+  <p style="margin-top:10px">Total: ₹${o.total}</p>
+  <p class="notice">Payment: Cash on Delivery</p>
+ </div>`;
 }
 
 // ADMIN
@@ -458,7 +631,6 @@ function showAdmin(){
  closePanels();
  document.getElementById("loginPanel").style.display="block";
 }
-
 function login(){
  if(document.getElementById("adminPass").value===ADMIN_PASSWORD){
   closePanels();
@@ -466,27 +638,20 @@ function login(){
   renderAdmin();
  }else alert("Wrong Password!");
 }
-
 function logout(){
  closePanels();
  document.getElementById("adminPass").value="";
 }
-
 function closePanels(){
- ["cartPanel","checkoutPanel","successPanel",
- "loginPanel","adminPanel"].forEach(id=>{
-  document.getElementById(id).style.display="none";
- });
+ ["cartPanel","checkoutPanel","successPanel","trackingPanel","loginPanel","adminPanel"]
+ .forEach(id=>document.getElementById(id).style.display="none");
 }
 
 // IMAGE UPLOAD
 function readImage(file){
  return new Promise((resolve,reject)=>{
   if(!file){resolve("");return;}
-  if(!file.type.startsWith("image/")){
-   reject(new Error("Select a valid image."));
-   return;
-  }
+  if(!file.type.startsWith("image/")){reject(new Error("Select a valid image."));return;}
   let reader=new FileReader();
   reader.onload=()=>resolve(reader.result);
   reader.onerror=()=>reject(new Error("Image reading failed."));
@@ -502,92 +667,185 @@ async function addProduct(){
  let back=document.getElementById("pback").files[0];
 
  if(!name||!Number.isFinite(price)||price<=0||!front){
-  alert("Enter title, valid price and front photo.");
-  return;
+  alert("Enter title, valid price and front photo.");return;
  }
-
  try{
   let frontImage=await readImage(front);
   let backImage=await readImage(back);
-
   let p={
    id:"NP"+Date.now().toString().slice(-8),
-   name,price,category:cat,
-   image:frontImage,back:backImage
+   name,price,category:cat,image:frontImage,back:backImage,newArrival:false
   };
-
   products.unshift(p);
-  try{
-   saveProducts();
-  }catch(e){
-   products.shift();
-   alert("Storage full! Use smaller photos.");
-   return;
+  try{saveProducts()}catch(e){
+   products.shift();alert("Storage full! Use smaller photos.");return;
   }
-
   document.getElementById("pname").value="";
   document.getElementById("pprice").value="";
   document.getElementById("pimage").value="";
   document.getElementById("pback").value="";
-
-  renderProducts();
-  renderAdmin();
+  renderProducts();renderAdmin();
   alert("Product uploaded successfully!");
- }catch(e){
-  alert(e.message);
- }
+ }catch(e){alert(e.message)}
 }
 
 function renderAdmin(){
- document.getElementById("adminProducts").innerHTML=
- products.map(p=>`
+ document.getElementById("statProducts").innerText=products.length;
+ document.getElementById("statOrders").innerText=orders.length;
+ document.getElementById("statPending").innerText=orders.filter(o=>o.status==="Pending").length;
+ document.getElementById("statNew").innerText=products.filter(p=>p.newArrival).length;
+
+ document.getElementById("adminProducts").innerHTML=products.map(p=>`
  <div class="cart-item">
-  <div>
-   <b>${escapeHTML(p.name)}</b>
+  <div><b>${escapeHTML(p.name)}</b>
    <p class="pid">${escapeHTML(p.id)} | ${escapeHTML(p.category)}</p>
-   ₹${p.price}
+   ₹${p.price} ${p.newArrival?"| ✨ New Arrival":""}
   </div>
   <div>
    <button class="blue" onclick="editProduct('${p.id}')">Edit</button>
+   <button class="yellow" onclick="toggleNew('${p.id}')">${p.newArrival?"Remove New":"Mark New"}</button>
    <button class="dark" onclick="deleteProduct('${p.id}')">Delete</button>
   </div>
  </div>`).join("")||"<p>No products.</p>";
+
+ document.getElementById("adminOrders").innerHTML=orders.map(o=>`
+ <div class="order-card">
+  <b>${escapeHTML(o.orderID)}</b>
+  <p>${escapeHTML(o.customer)} | ${escapeHTML(o.phone)}</p>
+  <p>Total: ₹${o.total} | ${escapeHTML(o.date||"")}</p>
+  <p>Current Status: <b class="status">${escapeHTML(o.status)}</b></p>
+  <select id="status_${o.orderID}">
+   ${["Pending","Confirmed","Shipped","Delivered","Cancelled"].map(s=>
+    `<option value="${s}" ${o.status===s?"selected":""}>${s}</option>`).join("")}
+  </select>
+  <button class="blue" onclick="updateOrderStatus('${o.orderID}')">Update Status</button>
+ </div>`).join("")||"<p>No orders yet.</p>";
+
+ renderWheelAdmin();
+}
+
+function updateOrderStatus(id){
+ let o=orders.find(x=>x.orderID===id);
+ if(!o)return;
+ o.status=document.getElementById("status_"+id).value;
+ saveOrders();renderAdmin();
+ alert("Order status updated!");
+}
+
+function toggleNew(id){
+ let p=products.find(x=>x.id===id);
+ if(!p)return;
+ p.newArrival=!p.newArrival;
+ saveProducts();renderProducts();renderAdmin();
 }
 
 function editProduct(id){
  let p=products.find(x=>x.id===id);
  if(!p)return;
-
  let name=prompt("Edit product title:",p.name);
  if(name===null)return;
  let price=prompt("Edit product price:",p.price);
  if(price===null)return;
-
- name=name.trim();
- price=Number(price);
+ name=name.trim();price=Number(price);
  if(!name||!Number.isFinite(price)||price<=0){
-  alert("Invalid title or price.");
-  return;
+  alert("Invalid title or price.");return;
  }
-
- p.name=name;
- p.price=price;
- saveProducts();
- renderProducts();
- renderAdmin();
+ p.name=name;p.price=price;
+ saveProducts();renderProducts();renderAdmin();
  alert("Product updated!");
 }
 
 function deleteProduct(id){
  if(!confirm("Delete this product?"))return;
  products=products.filter(p=>p.id!==id);
- saveProducts();
- renderProducts();
- renderAdmin();
+ saveProducts();renderProducts();renderAdmin();
 }
 
+// DISCOUNT WHEEL ADMIN
+function renderWheelAdmin(){
+ let select=document.getElementById("wheelProduct");
+ select.innerHTML=products.map(p=>
+ `<option value="${p.id}">${escapeHTML(p.name)} - ₹${p.price}</option>`
+ ).join("");
+
+ if(wheelSettings){
+  select.value=wheelSettings.productId;
+  document.getElementById("wheelPercent").value=wheelSettings.percent;
+  document.getElementById("wheelActive").checked=wheelSettings.active&&wheelSettings.week===getWeekKey();
+ }
+ document.getElementById("wheelAdminInfo").innerText=
+ wheelIsActive()?"Active this week. Product: "+(products.find(p=>p.id===wheelSettings.productId)?.name||"")+
+ " | Discount: "+wheelSettings.percent+"%":"No active wheel for this week.";
+}
+
+function saveWheelSettings(){
+ let productId=document.getElementById("wheelProduct").value;
+ let percent=Number(document.getElementById("wheelPercent").value);
+ let active=document.getElementById("wheelActive").checked;
+
+ if(!products.some(p=>p.id===productId)){
+  alert("Please add a product first.");return;
+ }
+ if(!Number.isFinite(percent)||percent<1||percent>90){
+  alert("Enter discount between 1% and 90%.");return;
+ }
+ wheelSettings={productId,percent,active,week:getWeekKey()};
+ saveWheel();
+ renderWheelAdmin();renderProducts();renderAdmin();
+ updateSpinButton();
+ alert("Weekly Discount Wheel settings saved!");
+}
+
+// DISCOUNT WHEEL CUSTOMER
+function updateSpinButton(){
+ document.getElementById("spinFloat").style.display=wheelIsActive()?"block":"none";
+}
+function openWheel(){
+ if(!wheelIsActive()){alert("No active discount wheel right now.");return;}
+ let p=products.find(x=>x.id===wheelSettings.productId);
+ document.getElementById("wheelProductText").innerText=
+ "Selected product: "+p.name+" | Current price ₹"+p.price;
+ document.getElementById("wheelResult").innerText="";
+ document.getElementById("wheelCircle").classList.remove("spinning");
+ let already=hasSpunThisWeek();
+ document.getElementById("spinButton").disabled=already;
+ document.getElementById("spinButton").innerText=already?"Already Spun This Week":"🎡 SPIN NOW";
+ if(already){
+  document.getElementById("wheelResult").innerText=
+  "Your discount: "+spinRecord.percent+"%";
+ }
+ document.getElementById("wheelModal").style.display="flex";
+}
+function closeWheel(){document.getElementById("wheelModal").style.display="none"}
+
+function spinWheel(){
+ if(!wheelIsActive()){alert("This week's wheel is not active.");closeWheel();return;}
+ if(hasSpunThisWeek()){alert("You have already spun this week.");return;}
+
+ let btn=document.getElementById("spinButton");
+ btn.disabled=true;
+ document.getElementById("wheelCircle").classList.remove("spinning");
+ void document.getElementById("wheelCircle").offsetWidth;
+ document.getElementById("wheelCircle").classList.add("spinning");
+
+ setTimeout(()=>{
+  spinRecord={week:getWeekKey(),percent:wheelSettings.percent,productId:wheelSettings.productId};
+  localStorage.setItem("np_spin_record",JSON.stringify(spinRecord));
+  document.getElementById("wheelResult").innerText=
+  "🎉 You won "+wheelSettings.percent+"% OFF!";
+  document.getElementById("wheelCircle").innerText=wheelSettings.percent+"% OFF";
+  btn.innerText="Discount Activated!";
+  renderProducts();
+  if(detailProduct&&detailProduct.id===wheelSettings.productId){
+   document.getElementById("detailPrice").innerHTML=priceHTML(detailProduct);
+  }
+ },2600);
+}
+
+// INITIAL LOAD
 renderProducts();
 updateCart();
+updateSpinButton();
 </script>
 </body>
-</html>
+ </html>
