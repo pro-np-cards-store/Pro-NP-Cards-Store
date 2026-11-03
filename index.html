@@ -1,103 +1,142 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NP Cards Store</title>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial;background:#fff;color:#222}
-header{background:#172337;color:white;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
-.logo{font-size:23px;font-weight:bold;color:#43caff}
-.search{padding:12px;border:1px solid #ccc;border-radius:7px;width:100%;max-width:400px}
-button{border:0;padding:11px 15px;border-radius:7px;cursor:pointer;font-weight:bold}
+body{font-family:Arial;background:#f5f6f8;color:#222}
+button{border:0;padding:12px;border-radius:7px;font-weight:bold;cursor:pointer}
+header{background:#172337;color:white;padding:16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.logo{font-size:23px;font-weight:bold;color:#40c9ff}
+.search{padding:12px;border-radius:7px;border:0;flex:1;min-width:150px}
 .blue{background:#168bd1;color:white}
-.yellow{background:#ffbd35;color:#222}
-.green{background:#159b65;color:white}
+.yellow{background:#ffbd32;color:#111}
 .dark{background:#263750;color:white}
-.hero{text-align:center;padding:30px 12px;background:#f3f6fa}
-.hero h1{margin-bottom:10px}
-.categories{display:flex;justify-content:center;gap:10px;padding:18px;flex-wrap:wrap}
-.cat{background:#eee;color:#222}
-.cat.active{background:#168bd1;color:white}
-.container{max-width:1200px;margin:auto;padding:15px}
-.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:16px}
-.card{border:1px solid #ddd;border-radius:10px;overflow:hidden;background:white;box-shadow:0 2px 7px #00000012}
-.image-area{height:225px;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px}
-.image-area img{width:100%;height:100%;object-fit:contain;cursor:zoom-in}
-.card-info{padding:13px}
-.card h3{font-size:16px;line-height:1.4;min-height:42px}
-.pid{font-size:12px;color:#777;margin-top:8px;overflow-wrap:anywhere}
-.price{font-size:21px;font-weight:bold;color:#087eaa;margin:12px 0}
-.card button{width:100%;margin-top:7px}
-.panel{display:none;background:white;border:1px solid #ddd;border-radius:10px;padding:18px;max-width:700px;margin:20px auto;box-shadow:0 2px 8px #0001}
-.panel input,.panel select,.panel textarea{width:100%;padding:12px;margin:8px 0;border:1px solid #bbb;border-radius:7px;background:white;color:#222}
+.green{background:#159b64;color:white}
+.categories{display:flex;justify-content:center;gap:12px;padding:18px;flex-wrap:wrap}
+.cat{background:#243650;color:white}
+.cat.active{background:#168bd1}
+.container{max-width:1200px;margin:auto;padding:20px}
+h2.heading{margin:15px 0 20px}
+.products{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px}
+.card{background:white;border:1px solid #ddd;border-radius:10px;overflow:hidden;cursor:pointer}
+.card img{width:100%;height:220px;object-fit:contain;background:#fff;padding:8px}
+.card-info{padding:15px}
+.card h3{font-size:17px;min-height:40px}
+.price{font-size:22px;color:#168bd1;font-weight:bold;margin:12px 0}
+.pid{font-size:12px;color:#777;margin-top:7px}
+.card button{width:100%;margin-top:8px}
+.panel{display:none;background:white;padding:20px;border-radius:12px;margin:20px auto;max-width:650px;border:1px solid #ddd}
+.panel input,.panel select,.panel textarea{
+ width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:7px
+}
 .panel button{margin:5px 0}
-.admin-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 0;border-bottom:1px solid #ddd}
-.admin-item img{width:55px;height:65px;object-fit:contain}
-.admin-item button{padding:8px}
-.cart-item{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #ddd}
-.total{font-size:22px;font-weight:bold;margin:18px 0}
-.notice{font-size:13px;color:#666;margin:10px 0}
+.cart-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid #ddd}
+.total{font-size:23px;font-weight:bold;margin:18px 0}
+.notice{font-size:13px;color:#777;margin:10px 0}
 footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:35px}
-.modal{display:none;position:fixed;inset:0;background:#000b;z-index:20;overflow:auto;padding:15px}
-.modal-box{background:white;color:#222;max-width:750px;margin:25px auto;padding:18px;border-radius:12px}
-.modal-images{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-images img{width:100%;height:350px;object-fit:contain;background:white;border:1px solid #ddd;border-radius:7px}
-.modal-title{margin-bottom:15px}
-.close{float:right;background:#eee;color:#222}
-@media(max-width:480px){
- .products{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
- .image-area{height:180px}
+.hidden{display:none!important}
+
+/* PRODUCT DETAILS */
+.modal{
+ display:none;position:fixed;inset:0;background:#fff;
+ z-index:100;padding:18px;overflow-y:auto
+}
+.modal-box{max-width:1100px;margin:15px auto}
+.close{background:#263750;color:white;margin-bottom:20px}
+.detail-layout{display:grid;grid-template-columns:1.1fr 1fr;gap:30px}
+.gallery{display:flex;gap:12px}
+.thumbnails{display:flex;flex-direction:column;gap:9px}
+.thumbnails img{width:65px;height:75px;object-fit:contain;border:1px solid #ccc;border-radius:6px;cursor:pointer}
+.main-photo{width:100%;height:420px;object-fit:contain;cursor:zoom-in}
+.detail-info h2{font-size:27px;margin-bottom:15px}
+.detail-price{font-size:30px;font-weight:bold;margin:18px 0}
+.stock{color:green;font-weight:bold;margin:14px 0}
+.detail-row{padding:12px 0;border-bottom:1px solid #eee}
+.quantity{display:flex;align-items:center;gap:15px;margin:20px 0}
+.quantity button{background:#eee}
+.detail-actions{display:flex;gap:10px;flex-wrap:wrap}
+.detail-actions button{flex:1}
+.modal .notice{margin-top:15px}
+@media(max-width:650px){
+ .detail-layout{grid-template-columns:1fr}
+ .main-photo{height:310px}
+ .thumbnails img{width:48px;height:60px}
+ .detail-info h2{font-size:22px}
+ .container{padding:12px}
+ .products{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .card img{height:175px}
  .card-info{padding:10px}
- .card h3{font-size:14px}
- .modal-images img{height:230px}
- header .search{max-width:100%}
 }
 </style>
 </head>
+
 <body>
 
 <header>
  <div class="logo">NP Cards Store</div>
- <input class="search" id="search" placeholder="Search Cards..." oninput="renderProducts()">
+ <input class="search" id="search" placeholder="Search cards..." oninput="renderProducts()">
  <button class="yellow" onclick="showCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
- <button class="blue" onclick="showAdmin()">⚙ Admin</button>
+ <button class="dark" onclick="showAdmin()">⚙️ Admin</button>
 </header>
 
-<section class="hero">
+<section style="text-align:center;padding:35px 15px;background:#fff">
  <h1>Welcome to NP Cards Store</h1>
- <p>Discover Your Favourite Anime Cards!</p>
- <p>Pokémon ⚡ | Naruto 🍥</p>
+ <p style="margin-top:10px;color:#666">Discover Your Favourite Anime Cards!</p>
+ <p style="margin-top:8px">Pokémon ⚡ | Naruto 🍥</p>
 </section>
 
 <div class="categories">
  <button class="cat active" onclick="setCategory('All',this)">All Cards</button>
- <button class="cat" onclick="setCategory('Pokemon',this)">⚡ Pokémon</button>
- <button class="cat" onclick="setCategory('Naruto',this)">🍥 Naruto</button>
+ <button class="cat" onclick="setCategory('Pokemon',this)">Pokémon</button>
+ <button class="cat" onclick="setCategory('Naruto',this)">Naruto</button>
 </div>
 
 <main class="container" id="store">
- <h2 style="margin-bottom:18px">🔥 Explore Cards</h2>
+ <h2 class="heading">🔥 Explore Cards</h2>
  <div class="products" id="products"></div>
 </main>
 
-<!-- PHOTO VIEWER -->
-<div class="modal" id="photoModal" onclick="if(event.target===this)closePhoto()">
+<!-- PRODUCT DETAILS -->
+<div class="modal" id="photoModal">
  <div class="modal-box">
-  <button class="close" onclick="closePhoto()">✕ Close</button>
-  <h2 class="modal-title" id="photoTitle">Product Photos</h2>
-  <div class="modal-images">
+  <button class="close" onclick="closePhoto()">← Back to Store</button>
+  <div class="detail-layout">
    <div>
-    <b>Front Side</b>
-    <img id="frontView" alt="Front side">
+    <div class="gallery">
+     <div class="thumbnails">
+      <img id="thumbFront" onclick="switchPhoto('front')">
+      <img id="thumbBack" onclick="switchPhoto('back')">
+     </div>
+     <img id="mainProductPhoto" class="main-photo"
+      onclick="window.open(this.src,'_blank')">
+    </div>
+    <p class="notice">Click photo to view full size</p>
    </div>
-   <div>
-    <b>Back Side</b>
-    <img id="backView" alt="Back side">
+   <div class="detail-info">
+    <h2 id="detailName"></h2>
+    <div class="detail-price" id="detailPrice"></div>
+    <div class="stock">✓ In Stock</div>
+    <div class="detail-row">Product ID: <b id="detailID"></b></div>
+    <div class="detail-row">Category: <b id="detailCategory"></b></div>
+    <div class="detail-row">Condition: Collectible Card</div>
+    <div class="quantity">
+     <b>Quantity:</b>
+     <button onclick="changeDetailQty(-1)">−</button>
+     <b id="detailQty">1</b>
+     <button onclick="changeDetailQty(1)">+</button>
+    </div>
+    <div class="detail-actions">
+     <button class="yellow" onclick="detailAddCart()">🛒 Add to Cart</button>
+     <button class="blue" onclick="detailBuyNow()">Buy Now</button>
+    </div>
+    <p class="notice">Cash on Delivery Available</p>
    </div>
   </div>
-  <p style="margin-top:12px;color:#777;font-size:13px">Product images - Front and Back</p>
  </div>
 </div>
 
@@ -113,14 +152,14 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 <!-- CHECKOUT -->
 <section class="panel" id="checkoutPanel">
  <h2>📦 Delivery Details</h2>
- <p class="notice">Payment Method: Cash on Delivery</p>
+ <p class="notice">Payment: Cash on Delivery only.</p>
  <form id="orderForm">
   <input id="customer" placeholder="Full Name" required>
-  <input id="phone" type="tel" placeholder="10 Digit Mobile Number" pattern="[0-9]{10}" required>
+  <input id="phone" type="tel" placeholder="Mobile Number" pattern="[0-9]{10}" required>
   <textarea id="address" placeholder="Full House Address" required></textarea>
   <input id="city" placeholder="City" required>
   <input id="pincode" placeholder="PIN Code" pattern="[0-9]{6}" required>
-  <button class="green">Confirm COD Order</button>
+  <button class="green" type="submit">Confirm COD Order</button>
  </form>
  <button class="dark" onclick="closePanels()">Back</button>
 </section>
@@ -128,13 +167,14 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 <!-- SUCCESS -->
 <section class="panel" id="successPanel">
  <h2 style="color:green">✅ Order Successful!</h2>
- <p id="orderSummary" style="margin:15px 0"></p>
- <p class="notice">Send your order details to us on WhatsApp.</p>
- <button class="green" onclick="sendOrderWhatsApp()">💬 Chat on WhatsApp</button>
+ <p style="margin:15px 0">Your order details are ready.</p>
+ <p id="orderSummary"></p>
+ <p class="notice">Click below to send your order details to WhatsApp.</p>
+ <button class="green" onclick="sendOrderWhatsApp()">💬 Chat on WhatsApp – Send Order</button>
  <button class="dark" onclick="closePanels()">Back to Store</button>
 </section>
 
-<!-- LOGIN -->
+<!-- ADMIN LOGIN -->
 <section class="panel" id="loginPanel">
  <h2>🔐 Admin Login</h2>
  <input type="password" id="adminPass" placeholder="Admin Password">
@@ -142,80 +182,77 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
  <button class="dark" onclick="closePanels()">Close</button>
 </section>
 
-<!-- ADMIN -->
+<!-- ADMIN PANEL -->
 <section class="panel" id="adminPanel">
- <h2>⚙ NP Cards Admin Panel</h2>
- <p class="notice">Manage your store products here.</p>
-
- <h3 id="formHeading">Upload New Product</h3>
+ <h2>⚙️ NP Admin Panel</h2>
+ <h3 style="margin-top:20px">Upload New Product</h3>
  <input id="pname" placeholder="Product Title">
  <input id="pprice" type="number" min="1" placeholder="Product Price ₹">
-
  <select id="pcategory">
-  <option value="Pokemon">Pokémon</option>
-  <option value="Naruto">Naruto</option>
+  <option value="Pokemon">Pokémon Cards</option>
+  <option value="Naruto">Naruto Cards</option>
  </select>
-
  <label>Front Photo</label>
- <input id="frontFile" type="file" accept="image/*">
- <input id="frontURL" placeholder="Or Front Photo URL">
-
+ <input id="pimage" type="file" accept="image/*">
  <label>Back Photo</label>
- <input id="backFile" type="file" accept="image/*">
- <input id="backURL" placeholder="Or Back Photo URL">
-
- <button class="green" onclick="saveProduct()">💾 Save Product</button>
- <button class="dark" id="cancelEdit" style="display:none" onclick="resetForm()">Cancel Edit</button>
-
- <h3 style="margin:25px 0 12px">📦 Manage Products</h3>
+ <input id="pback" type="file" accept="image/*">
+ <button class="green" onclick="addProduct()">+ Upload Product</button>
+ <h3 style="margin:25px 0 10px">Manage Products</h3>
  <div id="adminProducts"></div>
-
  <button class="dark" onclick="logout()">Logout</button>
 </section>
 
 <footer>
  <h3>NP Cards Store</h3>
- <p>Pokémon & Naruto Cards Collection</p>
- <p style="margin:12px">Need Help?</p>
+ <p style="margin:10px">Pokémon & Naruto Cards Collection</p>
  <button class="blue" onclick="contactSupport()">Contact Support</button>
  <p class="notice">© 2026 NP Cards Store</p>
 </footer>
 
 <script>
-// CONFIGURATION
-const WHATSAPP_NUMBER="918976034412";
-const ADMIN_PASSWORD="PRONPSTORE1234";
+// CONFIG - YOUR ORIGINAL DETAILS
+const WHATSAPP_NUMBER = "918976034412";
+const ADMIN_PASSWORD = "PRONPSTORE1234";
 
-let products=JSON.parse(localStorage.getItem("np_products")||"null")||[
- {id:"NP101",name:"Pikachu Card",price:99,category:"Pokemon",image:"https://placehold.co/400x400?text=Pikachu",back:"https://placehold.co/400x400?text=Pokemon+Back"},
- {id:"NP102",name:"Charizard Card",price:149,category:"Pokemon",image:"https://placehold.co/400x400?text=Charizard",back:"https://placehold.co/400x400?text=Pokemon+Back"},
- {id:"NP103",name:"Naruto Uzumaki Card",price:99,category:"Naruto",image:"https://placehold.co/400x400?text=Naruto",back:"https://placehold.co/400x400?text=Naruto+Back"},
- {id:"NP104",name:"Sasuke Uchiha Card",price:129,category:"Naruto",image:"https://placehold.co/400x400?text=Sasuke",back:"https://placehold.co/400x400?text=Naruto+Back"}
+// PRODUCTS
+let products = JSON.parse(localStorage.getItem("np_products")) || [
+ {id:"NP101",name:"Pikachu Card",price:99,category:"Pokemon",image:"https://placehold.co/400x400/ffffff/222222?text=Pikachu",back:""},
+ {id:"NP102",name:"Charizard Card",price:149,category:"Pokemon",image:"https://placehold.co/400x400/ffffff/222222?text=Charizard",back:""},
+ {id:"NP103",name:"Naruto Uzumaki Card",price:99,category:"Naruto",image:"https://placehold.co/400x400/ffffff/222222?text=Naruto",back:""},
+ {id:"NP104",name:"Sasuke Uchiha Card",price:129,category:"Naruto",image:"https://placehold.co/400x400/ffffff/222222?text=Sasuke",back:""}
 ];
-
-products=products.map(p=>({...p,back:p.back||p.image}));
 
 let cart=[];
 let category="All";
 let currentOrder=null;
-let editingID=null;
+let detailProduct=null;
+let detailQuantity=1;
 
-function escapeHTML(v){
- return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
 function saveProducts(){
  localStorage.setItem("np_products",JSON.stringify(products));
 }
+
+function escapeHTML(v){
+ return String(v).replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",
+ '"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
 function renderProducts(){
- let q=document.getElementById("search").value.toLowerCase();
- let list=products.filter(p=>(category==="All"||p.category===category)&&p.name.toLowerCase().includes(q));
- document.getElementById("products").innerHTML=list.length?list.map(p=>`
+ let search=document.getElementById("search").value.toLowerCase();
+ let list=products.filter(p=>
+  (category==="All"||p.category===category)&&
+  p.name.toLowerCase().includes(search)
+ );
+
+ document.getElementById("products").innerHTML=list.length?
+ list.map(p=>`
  <div class="card">
-  <div class="image-area">
-   <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" onclick="openPhoto('${p.id}')" onerror="this.src='https://placehold.co/400?text=Card'">
-  </div>
+  <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}"
+   onclick="openPhoto('${p.id}')">
   <div class="card-info">
-   <h3>${escapeHTML(p.name)}</h3>
+   <h3 onclick="openPhoto('${p.id}')">${escapeHTML(p.name)}</h3>
    <div class="pid">Product ID: ${escapeHTML(p.id)}</div>
    <div class="price">₹${Number(p.price)}</div>
    <button class="yellow" onclick="addCart('${p.id}')">Add to Cart</button>
@@ -223,30 +260,67 @@ function renderProducts(){
   </div>
  </div>`).join(""):"<p>No products found.</p>";
 }
-function openPhoto(id){
- let p=products.find(x=>x.id===id);
- if(!p)return;
- document.getElementById("photoTitle").innerText=p.name;
- document.getElementById("frontView").src=p.image;
- document.getElementById("backView").src=p.back||p.image;
- document.getElementById("photoModal").style.display="block";
-}
-function closePhoto(){document.getElementById("photoModal").style.display="none"}
 
-function setCategory(c,b){
+function setCategory(c,btn){
  category=c;
- document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));
- b.classList.add("active");
+ document.querySelectorAll(".cat").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");
  renderProducts();
 }
-function closePanels(){
- document.querySelectorAll(".panel").forEach(p=>p.style.display="none");
+
+// PRODUCT DETAILS
+function openPhoto(id){
+ detailProduct=products.find(p=>p.id===id);
+ if(!detailProduct)return;
+ detailQuantity=1;
+
+ document.getElementById("detailName").innerText=detailProduct.name;
+ document.getElementById("detailPrice").innerText="₹"+detailProduct.price;
+ document.getElementById("detailID").innerText=detailProduct.id;
+ document.getElementById("detailCategory").innerText=
+ detailProduct.category==="Pokemon"?"Pokémon Cards":"Naruto Cards";
+
+ document.getElementById("thumbFront").src=detailProduct.image;
+ document.getElementById("thumbBack").src=detailProduct.back||detailProduct.image;
+ document.getElementById("mainProductPhoto").src=detailProduct.image;
+ document.getElementById("detailQty").innerText=1;
+ document.getElementById("photoModal").style.display="block";
 }
-function showCart(){
- closePanels();
- document.getElementById("cartPanel").style.display="block";
- renderCart();
+
+function switchPhoto(side){
+ if(!detailProduct)return;
+ document.getElementById("mainProductPhoto").src=
+ side==="front"?detailProduct.image:(detailProduct.back||detailProduct.image);
 }
+
+function closePhoto(){
+ document.getElementById("photoModal").style.display="none";
+}
+
+function changeDetailQty(n){
+ detailQuantity=Math.max(1,Math.min(20,detailQuantity+n));
+ document.getElementById("detailQty").innerText=detailQuantity;
+}
+
+function detailAddCart(){
+ if(!detailProduct)return;
+ let item=cart.find(p=>p.id===detailProduct.id);
+ if(item)item.qty+=detailQuantity;
+ else cart.push({...detailProduct,qty:detailQuantity});
+ updateCart();
+ closePhoto();
+ alert("Added to cart!");
+}
+
+function detailBuyNow(){
+ if(!detailProduct)return;
+ cart=[{...detailProduct,qty:detailQuantity}];
+ updateCart();
+ closePhoto();
+ checkout();
+}
+
+// CART
 function addCart(id){
  let p=products.find(x=>x.id===id);
  if(!p)return;
@@ -256,6 +330,7 @@ function addCart(id){
  updateCart();
  alert("Added to cart!");
 }
+
 function buyNow(id){
  let p=products.find(x=>x.id===id);
  if(!p)return;
@@ -263,176 +338,252 @@ function buyNow(id){
  updateCart();
  checkout();
 }
+
 function updateCart(){
- document.getElementById("cartCount").innerText=cart.reduce((s,p)=>s+p.qty,0);
+ document.getElementById("cartCount").innerText=
+ cart.reduce((s,p)=>s+p.qty,0);
 }
+
+function showCart(){
+ closePanels();
+ document.getElementById("cartPanel").style.display="block";
+ renderCart();
+}
+
 function renderCart(){
  document.getElementById("cartItems").innerHTML=cart.map(p=>`
  <div class="cart-item">
- <div><b>${escapeHTML(p.name)}</b><br>₹${p.price} × ${p.qty}</div>
- <div>
- <button class="yellow" onclick="changeQty('${p.id}',-1)">−</button>
- <button class="yellow" onclick="changeQty('${p.id}',1)">+</button>
- <button class="dark" onclick="removeItem('${p.id}')">✕</button>
- </div></div>`).join("")||"<p>Your cart is empty.</p>";
- document.getElementById("cartTotal").innerText="Total: ₹"+cart.reduce((s,p)=>s+p.price*p.qty,0);
+  <div>
+   <b>${escapeHTML(p.name)}</b>
+   <p class="pid">${escapeHTML(p.id)}</p>
+   ₹${p.price} × ${p.qty}
+  </div>
+  <div>
+   <button class="yellow" onclick="changeQty('${p.id}',-1)">−</button>
+   <button class="yellow" onclick="changeQty('${p.id}',1)">+</button>
+   <button class="dark" onclick="removeItem('${p.id}')">✕</button>
+  </div>
+ </div>`).join("")||"<p>Your cart is empty.</p>";
+
+ document.getElementById("cartTotal").innerText=
+ "Total: ₹"+cart.reduce((s,p)=>s+p.price*p.qty,0);
 }
+
 function changeQty(id,n){
  let p=cart.find(x=>x.id===id);
  if(!p)return;
  p.qty+=n;
- if(p.qty<=0)cart=cart.filter(x=>x.id!==id);
- updateCart();renderCart();
+ if(p.qty<=0)removeItem(id);
+ else renderCart();
+ updateCart();
 }
+
 function removeItem(id){
- cart=cart.filter(x=>x.id!==id);
- updateCart();renderCart();
+ cart=cart.filter(p=>p.id!==id);
+ updateCart();
+ renderCart();
 }
+
 function checkout(){
- if(!cart.length)return alert("Cart is empty!");
+ if(!cart.length){alert("Cart is empty!");return;}
  closePanels();
  document.getElementById("checkoutPanel").style.display="block";
 }
+
+// ORDER
 document.getElementById("orderForm").addEventListener("submit",function(e){
  e.preventDefault();
- if(!cart.length)return alert("Cart is empty!");
+ if(!cart.length)return;
+
+ let total=cart.reduce((s,p)=>s+p.price*p.qty,0);
+
  currentOrder={
- orderID:"NP"+Date.now().toString().slice(-8),
- customer:document.getElementById("customer").value.trim(),
- phone:document.getElementById("phone").value.trim(),
- address:document.getElementById("address").value.trim(),
- city:document.getElementById("city").value.trim(),
- pincode:document.getElementById("pincode").value.trim(),
- items:cart.map(p=>({...p})),
- total:cart.reduce((s,p)=>s+p.price*p.qty,0)
+  orderID:"NP"+Date.now().toString().slice(-8),
+  customer:document.getElementById("customer").value.trim(),
+  phone:document.getElementById("phone").value.trim(),
+  address:document.getElementById("address").value.trim(),
+  city:document.getElementById("city").value.trim(),
+  pincode:document.getElementById("pincode").value.trim(),
+  items:cart.map(p=>({...p})),
+  total
  };
- document.getElementById("orderSummary").innerText="Order ID: "+currentOrder.orderID+" | Total: ₹"+currentOrder.total+" | Cash on Delivery";
- cart=[];updateCart();this.reset();
+
+ document.getElementById("orderSummary").innerHTML=
+ "Order ID: "+escapeHTML(currentOrder.orderID)+
+ "<br>Total: ₹"+total+
+ "<br>Payment: Cash on Delivery";
+
+ cart=[];
+ updateCart();
+ this.reset();
  closePanels();
  document.getElementById("successPanel").style.display="block";
 });
+
 function sendOrderWhatsApp(){
  if(!currentOrder)return;
  let o=currentOrder;
- let items=o.items.map(p=>p.name+" | "+p.id+" | Qty: "+p.qty+" | ₹"+(p.price*p.qty)).join("\n");
- let msg="NEW NP CARDS STORE ORDER\nOrder: "+o.orderID+
- "\nCustomer: "+o.customer+"\nMobile: "+o.phone+
- "\n\nPRODUCTS:\n"+items+"\n\nTotal: ₹"+o.total+
- "\nPayment: Cash on Delivery\n\nAddress: "+o.address+", "+o.city+" - "+o.pincode;
+ let items=o.items.map(p=>
+ p.name+" | ID: "+p.id+" | Qty: "+p.qty+
+ " | ₹"+(p.price*p.qty)).join("\n");
+
+ let msg="NEW ORDER - NP CARDS STORE\n\n"+
+ "Order ID: "+o.orderID+
+ "\nCustomer: "+o.customer+
+ "\nMobile: "+o.phone+
+ "\n\nPRODUCTS:\n"+items+
+ "\n\nTOTAL: ₹"+o.total+
+ "\nPayment: Cash on Delivery"+
+ "\n\nDELIVERY ADDRESS:\n"+o.address+
+ "\n"+o.city+" - "+o.pincode;
+
  openWhatsApp(msg);
 }
-function openWhatsApp(msg){
- if(!/^91[0-9]{10}$/.test(WHATSAPP_NUMBER))return alert("Check WhatsApp number in code.");
- window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent(msg),"_blank");
+
+function openWhatsApp(message){
+ if(!/^91[0-9]{10}$/.test(WHATSAPP_NUMBER)){
+  alert("Check WhatsApp number in configuration.");
+  return;
+ }
+ window.open("https://wa.me/"+WHATSAPP_NUMBER+
+ "?text="+encodeURIComponent(message),"_blank");
 }
-function contactSupport(){openWhatsApp("Hello NP Cards Store, I need support.");}
+
+function contactSupport(){
+ openWhatsApp("Hello NP Cards Store! I need help.");
+}
 
 // ADMIN
 function showAdmin(){
  closePanels();
  document.getElementById("loginPanel").style.display="block";
 }
-function login(){
- if(document.getElementById("adminPass").value!==ADMIN_PASSWORD)return alert("Wrong Password!");
- document.getElementById("adminPass").value="";
- closePanels();
- document.getElementById("adminPanel").style.display="block";
- renderAdmin();
-}
-function logout(){closePanels();resetForm();alert("Logged out!");}
 
+function login(){
+ if(document.getElementById("adminPass").value===ADMIN_PASSWORD){
+  closePanels();
+  document.getElementById("adminPanel").style.display="block";
+  renderAdmin();
+ }else alert("Wrong Password!");
+}
+
+function logout(){
+ closePanels();
+ document.getElementById("adminPass").value="";
+}
+
+function closePanels(){
+ ["cartPanel","checkoutPanel","successPanel",
+ "loginPanel","adminPanel"].forEach(id=>{
+  document.getElementById(id).style.display="none";
+ });
+}
+
+// IMAGE UPLOAD
 function readImage(file){
  return new Promise((resolve,reject)=>{
-  if(!file){resolve(null);return}
-  if(!file.type.startsWith("image/")){reject("Please select an image file.");return}
-  if(file.size>450000){reject("Photo must be under 450 KB. Compress it first.");return}
+  if(!file){resolve("");return;}
+  if(!file.type.startsWith("image/")){
+   reject(new Error("Select a valid image."));
+   return;
+  }
   let reader=new FileReader();
   reader.onload=()=>resolve(reader.result);
-  reader.onerror=()=>reject("Could not read image.");
+  reader.onerror=()=>reject(new Error("Image reading failed."));
   reader.readAsDataURL(file);
  });
 }
-async function saveProduct(){
+
+async function addProduct(){
  let name=document.getElementById("pname").value.trim();
  let price=Number(document.getElementById("pprice").value);
  let cat=document.getElementById("pcategory").value;
- let frontFile=document.getElementById("frontFile").files[0];
- let backFile=document.getElementById("backFile").files[0];
- let frontURL=document.getElementById("frontURL").value.trim();
- let backURL=document.getElementById("backURL").value.trim();
+ let front=document.getElementById("pimage").files[0];
+ let back=document.getElementById("pback").files[0];
 
- if(!name||!Number.isFinite(price)||price<=0)return alert("Enter valid title and price.");
+ if(!name||!Number.isFinite(price)||price<=0||!front){
+  alert("Enter title, valid price and front photo.");
+  return;
+ }
+
  try{
-  let old=products.find(p=>p.id===editingID);
-  let front=await readImage(frontFile);
-  let back=await readImage(backFile);
+  let frontImage=await readImage(front);
+  let backImage=await readImage(back);
 
-  front=front||frontURL||(old&&old.image)||null;
-  back=back||backURL||(old&&old.back)||(front);
-  if(!front)return alert("Please add front photo.");
+  let p={
+   id:"NP"+Date.now().toString().slice(-8),
+   name,price,category:cat,
+   image:frontImage,back:backImage
+  };
 
-  if(editingID){
-   old.name=name;old.price=price;old.category=cat;
-   old.image=front;old.back=back;
-  }else{
-   products.unshift({
-    id:"NP"+Date.now().toString().slice(-8),
-    name,price,category:cat,image:front,back
-   });
+  products.unshift(p);
+  try{
+   saveProducts();
+  }catch(e){
+   products.shift();
+   alert("Storage full! Use smaller photos.");
+   return;
   }
-  saveProducts();
-  resetForm();
+
+  document.getElementById("pname").value="";
+  document.getElementById("pprice").value="";
+  document.getElementById("pimage").value="";
+  document.getElementById("pback").value="";
+
   renderProducts();
   renderAdmin();
-  alert(editingID?"Product updated!":"Product uploaded successfully!");
- }catch(err){alert(String(err))}
+  alert("Product uploaded successfully!");
+ }catch(e){
+  alert(e.message);
+ }
 }
-function resetForm(){
- editingID=null;
- document.getElementById("pname").value="";
- document.getElementById("pprice").value="";
- document.getElementById("pcategory").value="Pokemon";
- document.getElementById("frontFile").value="";
- document.getElementById("backFile").value="";
- document.getElementById("frontURL").value="";
- document.getElementById("backURL").value="";
- document.getElementById("formHeading").innerText="Upload New Product";
- document.getElementById("cancelEdit").style.display="none";
-}
+
 function renderAdmin(){
- document.getElementById("adminProducts").innerHTML=products.map(p=>`
- <div class="admin-item">
- <img src="${escapeHTML(p.image)}" alt="">
- <div style="flex:1">
- <b>${escapeHTML(p.name)}</b>
- <p class="pid">${escapeHTML(p.id)} | ${escapeHTML(p.category)}</p>
- <b>₹${p.price}</b>
- </div>
- <div>
- <button class="blue" onclick="editProduct('${p.id}')">Edit</button>
- <button class="dark" onclick="deleteProduct('${p.id}')">Delete</button>
- </div>
- </div>`).join("")||"<p>No products uploaded.</p>";
+ document.getElementById("adminProducts").innerHTML=
+ products.map(p=>`
+ <div class="cart-item">
+  <div>
+   <b>${escapeHTML(p.name)}</b>
+   <p class="pid">${escapeHTML(p.id)} | ${escapeHTML(p.category)}</p>
+   ₹${p.price}
+  </div>
+  <div>
+   <button class="blue" onclick="editProduct('${p.id}')">Edit</button>
+   <button class="dark" onclick="deleteProduct('${p.id}')">Delete</button>
+  </div>
+ </div>`).join("")||"<p>No products.</p>";
 }
+
 function editProduct(id){
  let p=products.find(x=>x.id===id);
  if(!p)return;
- editingID=id;
- document.getElementById("pname").value=p.name;
- document.getElementById("pprice").value=p.price;
- document.getElementById("pcategory").value=p.category;
- document.getElementById("formHeading").innerText="Edit Product";
- document.getElementById("cancelEdit").style.display="inline-block";
- document.getElementById("frontFile").value="";
- document.getElementById("backFile").value="";
- document.getElementById("frontURL").value=p.image;
- document.getElementById("backURL").value=p.back||p.image;
- window.scrollTo({top:0,behavior:"smooth"});
+
+ let name=prompt("Edit product title:",p.name);
+ if(name===null)return;
+ let price=prompt("Edit product price:",p.price);
+ if(price===null)return;
+
+ name=name.trim();
+ price=Number(price);
+ if(!name||!Number.isFinite(price)||price<=0){
+  alert("Invalid title or price.");
+  return;
+ }
+
+ p.name=name;
+ p.price=price;
+ saveProducts();
+ renderProducts();
+ renderAdmin();
+ alert("Product updated!");
 }
+
 function deleteProduct(id){
  if(!confirm("Delete this product?"))return;
  products=products.filter(p=>p.id!==id);
- saveProducts();renderProducts();renderAdmin();
+ saveProducts();
+ renderProducts();
+ renderAdmin();
 }
 
 renderProducts();
