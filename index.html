@@ -271,7 +271,8 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
  <h2>🔐 Admin Login</h2>
  <input type="email" id="adminEmail" placeholder="Admin Email" autocomplete="username">
   <input type="password" id="adminPass" placeholder="Admin Password" autocomplete="current-password">
- <button class="blue" onclick="login()">Login</button>
+ <button class="blue" onclick="login()">Login with Email & Password</button>
+ <button class="green" onclick="adminGoogleLogin()">Continue with Google (Admin)</button>
  <button class="dark" onclick="closePanels()">Close</button>
 </section>
 
@@ -799,6 +800,30 @@ async function login(){
     startAdminOrdersListener();renderAdmin();
   }catch(err){console.error(err);alert("Login failed. Email/password check karo.");}
 }
+async function adminGoogleLogin(){
+  try{
+    const provider=new firebase.auth.GoogleAuthProvider();
+    const credential=await auth.signInWithPopup(provider);
+    if(credential.user.uid!==ADMIN_UID){
+      await auth.signOut();
+      alert("This Google account is not the authorized store admin. Correct admin Google account choose karo.");
+      return;
+    }
+    isAdmin=true;
+    closePanels();
+    document.getElementById("adminPanel").style.display="block";
+    startAdminOrdersListener();
+    renderAdmin();
+  }catch(err){
+    console.error("Admin Google login:",err);
+    if(err.code==="auth/popup-blocked" || err.code==="auth/operation-not-supported-in-this-environment"){
+      alert("Google popup blocked hai. Chrome browser mein site open karke try karo.");
+    }else{
+      alert(err.message||"Google admin login failed. Dobara try karo.");
+    }
+  }
+}
+
 async function logout(){
   try{await auth.signOut();}catch(e){console.error(e);}
   isAdmin=false;orders=[];
