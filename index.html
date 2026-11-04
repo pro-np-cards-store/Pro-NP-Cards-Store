@@ -376,9 +376,15 @@ function discountFor(id){
   return Number(spinRecord.percent)||0;
 }
 function getPrice(p){
-  let discount=discountFor(p.id);
-  return Math.round(Number(p.price)*(100-discount))/100;
-}
+  const price = Number(p?.price);
+
+  if(!Number.isFinite(price) || price <= 0){
+    return 0;
+  }
+
+  let discount = discountFor(p.id);
+  return Math.round(price * (100-discount)) / 100;
+   }
 function priceHTML(p){
   let discount=discountFor(p.id);
   return discount
