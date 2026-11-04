@@ -611,19 +611,35 @@ function showAdmin(){
   if(isAdmin){document.getElementById("adminPanel").style.display="block";renderAdmin();}
   else document.getElementById("loginPanel").style.display="block";
 }
-async function login(){
-  const email=document.getElementById("adminEmail").value.trim();
-  const password=document.getElementById("adminPass").value;
-  if(!email||!password){alert("Admin email aur password enter karo.");return;}
-  try{
-    const credential=await auth.signInWithEmailAndPassword(email,password);
-    if(credential.user.uid!==ADMIN_UID){
-      await auth.signOut();alert("This account is not the authorized store admin.");return;
+ async function login(){
+  const email = document.getElementById("adminEmail").value.trim();
+  const password = document.getElementById("adminPass").value;
+
+  if(!email || !password){
+    alert("Admin email aur password enter karo.");
+    return;
+  }
+
+  try {
+    const credential = await auth.signInWithEmailAndPassword(email, password);
+
+    if(credential.user.uid !== ADMIN_UID){
+      await auth.signOut();
+      alert("Wrong Admin UID. Authorized admin account use karo.");
+      return;
     }
-    isAdmin=true;closePanels();document.getElementById("adminPanel").style.display="block";
-    startAdminOrdersListener();renderAdmin();
-  }catch(err){console.error(err);alert("Login failed. Email/password check karo.");}
-}
+
+    isAdmin = true;
+    closePanels();
+    document.getElementById("adminPanel").style.display = "block";
+    startAdminOrdersListener();
+    renderAdmin();
+
+  } catch(err) {
+    console.error("Firebase Login Error:", err);
+    alert("Firebase Error: " + err.code + "\n" + err.message);
+  }
+ }
 async function logout(){
   try{await auth.signOut();}catch(e){console.error(e);}
   isAdmin=false;orders=[];
