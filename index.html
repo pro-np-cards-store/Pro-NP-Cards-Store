@@ -145,8 +145,10 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
   <button class="blue" id="customerAuthSubmit" onclick="customerEmailAuth()">Create Account</button>
   <div class="auth-divider">OR</div>
   <button class="dark" onclick="customerGoogleAuth()">Continue with Google</button>
+   <button class="yellow" type="button" onclick="continueAsGuest()">Continue as Guest</button>
   <p class="auth-switch"><span id="authSwitchText">Already have an account?</span> <a onclick="toggleCustomerAuthMode()" id="authSwitchLink">Login</a></p>
-  <p id="authMessage"></p>
+  <p class="auth-sub" style="margin-top:12px;margin-bottom:0">Guest mode: browse and add products to cart. Login is required only when placing an order.</p>
+   <p id="authMessage"></p>
  </div>
 </div>
 
@@ -529,14 +531,12 @@ function detailBuyNow(){if(!detailProduct)return;cart=[{...detailProduct,qty:det
 
 // CART
 function addCart(id,qty=1){
-  if(!auth.currentUser){alert("Shopping ke liye pehle login karo.");return;}
   let p=products.find(x=>x.id===id); if(!p)return;
   let item=cart.find(x=>x.id===id);
   if(item)item.qty+=qty; else cart.push({...p,qty});
   updateCart();alert("Added to cart!");
 }
 function buyNow(id){
-  if(!auth.currentUser){alert("Shopping ke liye pehle login karo.");return;}
   let p=products.find(x=>x.id===id);if(!p)return;
   cart=[{...p,qty:1}];updateCart();checkout();
 }
@@ -560,8 +560,14 @@ function changeQty(id,n){
 }
 function removeItem(id){cart=cart.filter(p=>p.id!==id);updateCart();renderCart();}
 function checkout(){
-  if(!auth.currentUser){alert("Checkout ke liye pehle login karo.");return;}
   if(!cart.length){alert("Cart is empty!");return;}
+  if(!auth.currentUser){
+    guestMode=false;
+    closePanels();
+    document.getElementById("authGate").style.display="flex";
+    showAuthError("Order place karne ke liye pehle Login ya Create Account karo. Tumhara cart safe rahega.");
+    return;
+  }
   closePanels();document.getElementById("checkoutPanel").style.display="block";
 }
 
@@ -648,6 +654,7 @@ async function trackOrder(){
 // CUSTOMER AUTHENTICATION
 let customerAuthMode="register";
 let customerProfile=null;
+let guestMode=false;
 
 function toggleCustomerAuthMode(){
   customerAuthMode=customerAuthMode==="register"?"login":"register";
@@ -657,6 +664,12 @@ function toggleCustomerAuthMode(){
   document.getElementById("authSwitchText").innerText=registering?"Already have an account?":"New to NP Cards Store?";
   document.getElementById("authSwitchLink").innerText=registering?"Login":"Create account";
   document.getElementById("customerAuthPassword").autocomplete=registering?"new-password":"current-password";
+  document.getElementById("authMessage").innerText="";
+}
+
+function continueAsGuest(){
+  guestMode=true;
+  document.getElementById("authGate").style.display="none";
   document.getElementById("authMessage").innerText="";
 }
 
@@ -805,9 +818,12 @@ auth.onAuthStateChanged(async user=>{
     gate.style.display="none";
     accountButton.style.display=isAdmin?"none":"inline-block";
     if(isAdmin) startAdminOrdersListener();
-    else await loadCustomerProfile(user);
+    else {
+      await loadCustomerProfile(user);
+      if(cart.length) checkout();
+    }
   }else{
-    gate.style.display="flex";
+    gate.style.display=guestMode?"none":"flex";
     accountButton.style.display="none";
     isAdmin=false;
     if(ordersUnsubscribe){ordersUnsubscribe();ordersUnsubscribe=null;}
