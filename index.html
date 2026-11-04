@@ -106,6 +106,20 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
  .card img{height:175px}
  .card-info{padding:10px}
 }
+
+/* CUSTOMER AUTHENTICATION */
+#authGate{position:fixed;inset:0;z-index:10000;background:linear-gradient(135deg,#101d31,#203d5d);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
+.auth-card{width:100%;max-width:430px;background:#fff;border-radius:16px;padding:25px;box-shadow:0 12px 40px #0005}
+.auth-card h2{text-align:center;margin-bottom:8px;color:#172337}
+.auth-sub{text-align:center;color:#667085;font-size:14px;margin-bottom:18px}
+.auth-card input{width:100%;padding:13px;margin:7px 0;border:1px solid #ccd3dc;border-radius:8px;font-size:15px}
+.auth-card button{width:100%;margin-top:9px}
+.auth-divider{text-align:center;color:#888;margin:13px 0;font-size:13px}
+.auth-switch{text-align:center;margin-top:15px;font-size:14px}
+.auth-switch a{color:#168bd1;font-weight:bold;cursor:pointer}
+#authMessage{font-size:13px;color:#d94343;text-align:center;min-height:18px;margin-top:9px}
+#accountButton{display:none}
+
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -114,7 +128,26 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 
 </head>
 
+
 <body>
+<div id="authGate">
+ <div class="auth-card">
+  <h2>NP Cards Store</h2>
+  <p class="auth-sub">Sign in or create an account to continue shopping</p>
+  <div id="registerFields">
+   <input id="customerAuthName" placeholder="Full Name" autocomplete="name">
+   <input id="customerAuthPhone" type="tel" placeholder="Phone Number (10 digits)" inputmode="numeric" maxlength="10">
+  </div>
+  <input id="customerAuthEmail" type="email" placeholder="Email Address" autocomplete="email">
+  <input id="customerAuthPassword" type="password" placeholder="Password (minimum 6 characters)" autocomplete="current-password">
+  <button class="blue" id="customerAuthSubmit" onclick="customerEmailAuth()">Create Account</button>
+  <div class="auth-divider">OR</div>
+  <button class="dark" onclick="customerGoogleAuth()">Continue with Google</button>
+  <p class="auth-switch"><span id="authSwitchText">Already have an account?</span> <a onclick="toggleCustomerAuthMode()" id="authSwitchLink">Login</a></p>
+  <p id="authMessage"></p>
+ </div>
+</div>
+
 
 <header>
  <div class="logo">NP Cards Store</div>
@@ -122,6 +155,7 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
  <button class="yellow" onclick="showCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
  <button class="dark" onclick="showTracking()">📦 Track Order</button>
  <button class="dark" onclick="showAdmin()">⚙️ Admin</button>
+ <button class="dark" id="accountButton" onclick="customerLogout()">Logout</button>
 </header>
 
 <section style="text-align:center;padding:35px 15px;background:#fff">
@@ -311,10 +345,10 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 <script>
 // NP CARDS STORE — FIREBASE EDITION
 const WHATSAPP_NUMBER = "918976034412";
-const ADMIN_UID = "ieCZF8pgybTR7nj22m4hpBconqc2";
+const ADMIN_UID = "7VQdj4tIUrMgOiGjmJX3NAIDFm22";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCHG84QiePF3OO56AYmagui4eFlwnPSBXQ",
+  apiKey: "AIzaSyCHG84QiePF3OO56AYmagui4eFlPSBXQ",
   authDomain: "np-cards-store-e82a6.firebaseapp.com",
   projectId: "np-cards-store-e82a6",
   storageBucket: "np-cards-store-e82a6.firebasestorage.app",
@@ -376,15 +410,9 @@ function discountFor(id){
   return Number(spinRecord.percent)||0;
 }
 function getPrice(p){
-  const price = Number(p?.price);
-
-  if(!Number.isFinite(price) || price <= 0){
-    return 0;
-  }
-
-  let discount = discountFor(p.id);
-  return Math.round(price * (100-discount)) / 100;
-   }
+  let discount=discountFor(p.id);
+  return Math.round(Number(p.price)*(100-discount))/100;
+}
 function priceHTML(p){
   let discount=discountFor(p.id);
   return discount
@@ -499,12 +527,14 @@ function detailBuyNow(){if(!detailProduct)return;cart=[{...detailProduct,qty:det
 
 // CART
 function addCart(id,qty=1){
+  if(!auth.currentUser){alert("Shopping ke liye pehle login karo.");return;}
   let p=products.find(x=>x.id===id); if(!p)return;
   let item=cart.find(x=>x.id===id);
   if(item)item.qty+=qty; else cart.push({...p,qty});
   updateCart();alert("Added to cart!");
 }
 function buyNow(id){
+  if(!auth.currentUser){alert("Shopping ke liye pehle login karo.");return;}
   let p=products.find(x=>x.id===id);if(!p)return;
   cart=[{...p,qty:1}];updateCart();checkout();
 }
@@ -528,13 +558,14 @@ function changeQty(id,n){
 }
 function removeItem(id){cart=cart.filter(p=>p.id!==id);updateCart();renderCart();}
 function checkout(){
+  if(!auth.currentUser){alert("Checkout ke liye pehle login karo.");return;}
   if(!cart.length){alert("Cart is empty!");return;}
   closePanels();document.getElementById("checkoutPanel").style.display="block";
 }
 
 // ORDERS
 document.getElementById("orderForm").addEventListener("submit",async function(e){
-  e.preventDefault();if(!cart.length)return;
+  e.preventDefault();if(!auth.currentUser){alert("Order place karne ke liye login zaroori hai.");return;}if(!cart.length)return;
   const submitButton=this.querySelector('button[type="submit"]');
   submitButton.disabled=true;submitButton.innerText="Saving Order...";
   try{
@@ -611,41 +642,148 @@ async function trackOrder(){
   }catch(err){console.error(err);result.innerHTML="<p>Tracking unavailable. Please try again.</p>";}
 }
 
+
+// CUSTOMER AUTHENTICATION
+let customerAuthMode="register";
+let customerProfile=null;
+
+function toggleCustomerAuthMode(){
+  customerAuthMode=customerAuthMode==="register"?"login":"register";
+  const registering=customerAuthMode==="register";
+  document.getElementById("registerFields").style.display=registering?"block":"none";
+  document.getElementById("customerAuthSubmit").innerText=registering?"Create Account":"Login";
+  document.getElementById("authSwitchText").innerText=registering?"Already have an account?":"New to NP Cards Store?";
+  document.getElementById("authSwitchLink").innerText=registering?"Login":"Create account";
+  document.getElementById("customerAuthPassword").autocomplete=registering?"new-password":"current-password";
+  document.getElementById("authMessage").innerText="";
+}
+
+function showAuthError(message){
+  document.getElementById("authMessage").innerText=message;
+}
+
+async function saveCustomerProfile(user, name="", phone=""){
+  const ref=db.collection("users").doc(user.uid);
+  const old=await ref.get();
+  const oldData=old.exists?old.data():{};
+  const profile={
+    uid:user.uid,
+    name:name||user.displayName||oldData.name||"",
+    email:user.email||oldData.email||"",
+    phone:phone||oldData.phone||"",
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(!old.exists) profile.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+  await ref.set(profile,{merge:true});
+  customerProfile={...oldData,...profile};
+  return customerProfile;
+}
+
+async function loadCustomerProfile(user){
+  try{
+    const doc=await db.collection("users").doc(user.uid).get();
+    customerProfile=doc.exists?doc.data():null;
+    if(customerProfile){
+      if(customerProfile.name)document.getElementById("customer").value=customerProfile.name;
+      if(customerProfile.phone)document.getElementById("phone").value=customerProfile.phone;
+    }
+  }catch(e){console.error("Customer profile:",e);}
+}
+
+async function customerEmailAuth(){
+  const email=document.getElementById("customerAuthEmail").value.trim();
+  const password=document.getElementById("customerAuthPassword").value;
+  const name=document.getElementById("customerAuthName").value.trim();
+  const phone=document.getElementById("customerAuthPhone").value.trim();
+  const btn=document.getElementById("customerAuthSubmit");
+  if(!email||!password){showAuthError("Email aur password enter karo.");return;}
+  if(password.length<6){showAuthError("Password minimum 6 characters ka hona chahiye.");return;}
+  if(customerAuthMode==="register"&&(!name||!/^[0-9]{10}$/.test(phone))){
+    showAuthError("Full name aur valid 10-digit phone number enter karo.");return;
+  }
+  btn.disabled=true;
+  try{
+    if(customerAuthMode==="register"){
+      const credential=await auth.createUserWithEmailAndPassword(email,password);
+      await saveCustomerProfile(credential.user,name,phone);
+    }else{
+      const credential=await auth.signInWithEmailAndPassword(email,password);
+      await loadCustomerProfile(credential.user);
+      if(!customerProfile || !customerProfile.phone){
+        const enteredPhone=prompt("Delivery ke liye apna 10-digit phone number enter karo:");
+        if(!enteredPhone||!/^[0-9]{10}$/.test(enteredPhone)){
+          await auth.signOut();
+          showAuthError("Valid phone number zaroori hai.");
+          return;
+        }
+        await saveCustomerProfile(credential.user,credential.user.displayName||"",enteredPhone);
+      }
+    }
+    showAuthError("");
+  }catch(e){
+    console.error(e);
+    const messages={
+      "auth/email-already-in-use":"Ye email already registered hai. Login karo.",
+      "auth/invalid-email":"Email address valid nahi hai.",
+      "auth/weak-password":"Password thoda strong rakho (minimum 6 characters).",
+      "auth/user-not-found":"Account nahi mila. Pehle register karo.",
+      "auth/wrong-password":"Password galat hai.",
+      "auth/invalid-credential":"Email ya password galat hai."
+    };
+    showAuthError(messages[e.code]||e.message||"Login/Register failed. Dobara try karo.");
+  }finally{btn.disabled=false;}
+}
+
+async function customerGoogleAuth(){
+  try{
+    const provider=new firebase.auth.GoogleAuthProvider();
+    const credential=await auth.signInWithPopup(provider);
+    let profile=await saveCustomerProfile(credential.user);
+    if(!profile.phone){
+      const phone=prompt("Google sign-in successful! Apna 10-digit phone number enter karo:");
+      if(!phone||!/^[0-9]{10}$/.test(phone)){
+        await auth.signOut();
+        showAuthError("Valid phone number zaroori hai. Dobara Google se sign in karo.");
+        return;
+      }
+      await saveCustomerProfile(credential.user,credential.user.displayName||"",phone);
+    }
+  }catch(e){
+    console.error(e);
+    if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){
+      showAuthError("Popup blocked hai. Chrome mein site open karke try karo.");
+    }else{
+      showAuthError(e.message||"Google sign-in failed.");
+    }
+  }
+}
+
+async function customerLogout(){
+  if(!confirm("Logout karna hai?"))return;
+  try{await auth.signOut();customerProfile=null;cart=[];updateCart();closePanels();}
+  catch(e){console.error(e);alert("Logout failed.");}
+}
+
+
 // ADMIN AUTH
 function showAdmin(){
   closePanels();
   if(isAdmin){document.getElementById("adminPanel").style.display="block";renderAdmin();}
   else document.getElementById("loginPanel").style.display="block";
 }
- async function login(){
-  const email = document.getElementById("adminEmail").value.trim();
-  const password = document.getElementById("adminPass").value;
-
-  if(!email || !password){
-    alert("Admin email aur password enter karo.");
-    return;
-  }
-
-  try {
-    const credential = await auth.signInWithEmailAndPassword(email, password);
-
-    if(credential.user.uid !== ADMIN_UID){
-      await auth.signOut();
-      alert("Wrong Admin UID. Authorized admin account use karo.");
-      return;
+async function login(){
+  const email=document.getElementById("adminEmail").value.trim();
+  const password=document.getElementById("adminPass").value;
+  if(!email||!password){alert("Admin email aur password enter karo.");return;}
+  try{
+    const credential=await auth.signInWithEmailAndPassword(email,password);
+    if(credential.user.uid!==ADMIN_UID){
+      await auth.signOut();alert("This account is not the authorized store admin.");return;
     }
-
-    isAdmin = true;
-    closePanels();
-    document.getElementById("adminPanel").style.display = "block";
-    startAdminOrdersListener();
-    renderAdmin();
-
-  } catch(err) {
-    console.error("Firebase Login Error:", err);
-    alert("Firebase Error: " + err.code + "\n" + err.message);
-  }
- }
+    isAdmin=true;closePanels();document.getElementById("adminPanel").style.display="block";
+    startAdminOrdersListener();renderAdmin();
+  }catch(err){console.error(err);alert("Login failed. Email/password check karo.");}
+}
 async function logout(){
   try{await auth.signOut();}catch(e){console.error(e);}
   isAdmin=false;orders=[];
@@ -657,10 +795,21 @@ function closePanels(){
   ["cartPanel","checkoutPanel","successPanel","trackingPanel","loginPanel","adminPanel"]
     .forEach(id=>document.getElementById(id).style.display="none");
 }
-auth.onAuthStateChanged(user=>{
+auth.onAuthStateChanged(async user=>{
   isAdmin=!!(user&&user.uid===ADMIN_UID);
-  if(user&&!isAdmin)auth.signOut();
-  if(isAdmin){startAdminOrdersListener();}
+  const gate=document.getElementById("authGate");
+  const accountButton=document.getElementById("accountButton");
+  if(user){
+    gate.style.display="none";
+    accountButton.style.display=isAdmin?"none":"inline-block";
+    if(isAdmin) startAdminOrdersListener();
+    else await loadCustomerProfile(user);
+  }else{
+    gate.style.display="flex";
+    accountButton.style.display="none";
+    isAdmin=false;
+    if(ordersUnsubscribe){ordersUnsubscribe();ordersUnsubscribe=null;}
+  }
 });
 
 // CLOUDINARY IMAGE UPLOAD
@@ -779,9 +928,7 @@ function updateSpinButton(){document.getElementById("spinFloat").style.display=w
 function openWheel(){
   if(!wheelIsActive()){alert("No active discount wheel right now.");return;}
   let p=products.find(x=>x.id===wheelSettings.productId);
-  document.getElementById("wheelProductText").innerText =
-  "Selected product: " + p.name + " | Current price ₹" +
-  (Number.isFinite(Number(p.price)) ? Number(p.price) : "Price unavailable");
+  document.getElementById("wheelProductText").innerText="Selected product: "+p.name+" | Current price ₹"+p.price;
   document.getElementById("wheelResult").innerText="";
   document.getElementById("wheelCircle").classList.remove("spinning");
   let already=hasSpunThisWeek();
