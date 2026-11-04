@@ -779,7 +779,9 @@ function updateSpinButton(){document.getElementById("spinFloat").style.display=w
 function openWheel(){
   if(!wheelIsActive()){alert("No active discount wheel right now.");return;}
   let p=products.find(x=>x.id===wheelSettings.productId);
-  document.getElementById("wheelProductText").innerText="Selected product: "+p.name+" | Current price ₹"+p.price;
+  document.getElementById("wheelProductText").innerText =
+  "Selected product: " + p.name + " | Current price ₹" +
+  (Number.isFinite(Number(p.price)) ? Number(p.price) : "Price unavailable");
   document.getElementById("wheelResult").innerText="";
   document.getElementById("wheelCircle").classList.remove("spinning");
   let already=hasSpunThisWeek();
