@@ -794,7 +794,10 @@ async function login(){
   try{
     const credential=await auth.signInWithEmailAndPassword(email,password);
     if(credential.user.uid!==ADMIN_UID){
-      await auth.signOut();alert("This account is not the authorized store admin.");return;
+      const actualUid=credential.user.uid;
+      await auth.signOut();
+      alert("Admin login rejected. Firebase signed you in as UID: "+actualUid+"\nAuthorized admin UID: "+ADMIN_UID+"\nUse the email address attached to the authorized admin account.");
+      return;
     }
     isAdmin=true;closePanels();document.getElementById("adminPanel").style.display="block";
     startAdminOrdersListener();renderAdmin();
@@ -805,8 +808,9 @@ async function adminGoogleLogin(){
     const provider=new firebase.auth.GoogleAuthProvider();
     const credential=await auth.signInWithPopup(provider);
     if(credential.user.uid!==ADMIN_UID){
+      const actualUid=credential.user.uid;
       await auth.signOut();
-      alert("This Google account is not the authorized store admin. Correct admin Google account choose karo.");
+      alert("Google admin login rejected. Firebase signed you in as UID: "+actualUid+"\nAuthorized admin UID: "+ADMIN_UID+"\nChoose the Google account attached to the authorized admin UID.");
       return;
     }
     isAdmin=true;
