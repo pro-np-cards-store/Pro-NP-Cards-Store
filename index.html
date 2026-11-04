@@ -107,6 +107,11 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
  .card-info{padding:10px}
 }
 </style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
 </head>
 
 <body>
@@ -226,7 +231,8 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 <!-- ADMIN LOGIN -->
 <section class="panel" id="loginPanel">
  <h2>🔐 Admin Login</h2>
- <input type="password" id="adminPass" placeholder="Admin Password">
+ <input type="email" id="adminEmail" placeholder="Admin Email" autocomplete="username">
+  <input type="password" id="adminPass" placeholder="Admin Password" autocomplete="current-password">
  <button class="blue" onclick="login()">Login</button>
  <button class="dark" onclick="closePanels()">Close</button>
 </section>
@@ -303,566 +309,493 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 </footer>
 
 <script>
-// ORIGINAL CONFIG - UNCHANGED
+// NP CARDS STORE — FIREBASE EDITION
 const WHATSAPP_NUMBER = "918976034412";
-const ADMIN_PASSWORD = "PRONPSTORE1234";
+const ADMIN_UID = "7VQdj4tIUrMgOiGjmJX3NAIDFm22";
 
-// PRODUCTS
-let products = JSON.parse(localStorage.getItem("np_products")) || [
- {id:"NP101",name:"Pikachu Card",price:99,category:"Pokemon",image:"https://placehold.co/400x400/ffffff/222222?text=Pikachu",back:""},
- {id:"NP102",name:"Charizard Card",price:149,category:"Pokemon",image:"https://placehold.co/400x400/ffffff/222222?text=Charizard",back:""},
- {id:"NP103",name:"Naruto Uzumaki Card",price:99,category:"Naruto",image:"https://placehold.co/400x400/ffffff/222222?text=Naruto",back:""},
- {id:"NP104",name:"Sasuke Uchiha Card",price:129,category:"Naruto",image:"https://placehold.co/400x400/ffffff/222222?text=Sasuke",back:""}
+const firebaseConfig = {
+  apiKey: "AIzaSyCHG84QiePF3OO56AYmagui4eFlPSBXQ",
+  authDomain: "np-cards-store-e82a6.firebaseapp.com",
+  projectId: "np-cards-store-e82a6",
+  storageBucket: "np-cards-store-e82a6.firebasestorage.app",
+  messagingSenderId: "138201707670",
+  appId: "1:138201707670:web:49fac9c22df75fb3de3eb7"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let products = [];
+let orders = [];
+let cart = [];
+let category = "All";
+let currentOrder = null;
+let detailProduct = null;
+let detailQuantity = 1;
+let wheelSettings = null;
+let spinRecord = null;
+let isAdmin = false;
+let productsUnsubscribe = null;
+let ordersUnsubscribe = null;
+let wheelUnsubscribe = null;
+let guestId = localStorage.getItem("np_guest_id");
+if (!guestId) {
+  guestId = "guest_" + (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now()+"_"+Math.random().toString(36).slice(2));
+  localStorage.setItem("np_guest_id", guestId);
+}
+
+const DEFAULT_PRODUCTS = [
+  {id:"NP101",name:"Pikachu Card",price:99,category:"Pokemon",image:"https://placehold.co/400x400/ffffff/222222?text=Pikachu",back:"",newArrival:false},
+  {id:"NP102",name:"Charizard Card",price:149,category:"Pokemon",image:"https://placehold.co/400x400/ffffff/222222?text=Charizard",back:"",newArrival:false},
+  {id:"NP103",name:"Naruto Uzumaki Card",price:99,category:"Naruto",image:"https://placehold.co/400x400/ffffff/222222?text=Naruto",back:"",newArrival:false},
+  {id:"NP104",name:"Sasuke Uchiha Card",price:129,category:"Naruto",image:"https://placehold.co/400x400/ffffff/222222?text=Sasuke",back:"",newArrival:false}
 ];
 
-let cart=[];
-let category="All";
-let currentOrder=null;
-let detailProduct=null;
-let detailQuantity=1;
-
-let orders=JSON.parse(localStorage.getItem("np_orders")||"[]");
-let wheelSettings=JSON.parse(localStorage.getItem("np_wheel")||"null");
-let spinRecord=JSON.parse(localStorage.getItem("np_spin_record")||"null");
-
-function saveProducts(){localStorage.setItem("np_products",JSON.stringify(products))}
-function saveOrders(){localStorage.setItem("np_orders",JSON.stringify(orders))}
-function saveWheel(){localStorage.setItem("np_wheel",JSON.stringify(wheelSettings))}
-
 function escapeHTML(v){
- return String(v).replace(/[&<>"']/g,c=>({
- "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- }[c]));
+  return String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-
 function getWeekKey(){
- let d=new Date();
- let day=(d.getDay()+6)%7;
- d.setDate(d.getDate()-day);
- return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+  let d=new Date(), day=(d.getDay()+6)%7;
+  d.setDate(d.getDate()-day);
+  return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
 }
-
 function getWeekEnd(){
- let d=new Date();
- let day=d.getDay();
- d.setDate(d.getDate()+(7-day)%7);
- d.setHours(23,59,59,999);
- return d;
+  let d=new Date(), day=d.getDay();
+  d.setDate(d.getDate()+(7-day)%7);
+  d.setHours(23,59,59,999);
+  return d;
 }
-
 function wheelIsActive(){
- return wheelSettings &&
- wheelSettings.active &&
- wheelSettings.week===getWeekKey() &&
- products.some(p=>p.id===wheelSettings.productId) &&
- new Date()<getWeekEnd();
+  return !!(wheelSettings && wheelSettings.active && wheelSettings.week===getWeekKey() &&
+    products.some(p=>p.id===wheelSettings.productId) && new Date()<getWeekEnd());
 }
-
-function hasSpunThisWeek(){
- return spinRecord && spinRecord.week===getWeekKey();
-}
-
+function hasSpunThisWeek(){ return !!(spinRecord && spinRecord.week===getWeekKey()); }
 function discountFor(id){
- if(!wheelIsActive()||!hasSpunThisWeek())return 0;
- if(wheelSettings.productId!==id)return 0;
- return Number(wheelSettings.percent)||0;
+  if(!wheelIsActive() || !hasSpunThisWeek() || wheelSettings.productId!==id) return 0;
+  return Number(spinRecord.percent)||0;
 }
-
 function getPrice(p){
- let discount=discountFor(p.id);
- return Math.round(Number(p.price)*(100-discount))/100;
+  let discount=discountFor(p.id);
+  return Math.round(Number(p.price)*(100-discount))/100;
+}
+function priceHTML(p){
+  let discount=discountFor(p.id);
+  return discount
+    ? '<span class="old-price">₹'+Number(p.price)+'</span>₹'+getPrice(p)+' <small style="color:#159b64">-'+discount+'%</small>'
+    : '₹'+Number(p.price);
 }
 
-function priceHTML(p){
- let discount=discountFor(p.id);
- if(discount){
-  return '<span class="old-price">₹'+Number(p.price)+'</span>₹'+getPrice(p)+' <small style="color:#159b64">-'+discount+'%</small>';
- }
- return '₹'+Number(p.price);
+function startFirebaseListeners(){
+  if(productsUnsubscribe) productsUnsubscribe();
+  productsUnsubscribe=db.collection("products").onSnapshot(snapshot=>{
+    products=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
+    products.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+    renderProducts();
+    updateSpinButton();
+    if(isAdmin) renderAdmin();
+  },err=>console.error("Products listener:",err));
+
+  if(wheelUnsubscribe) wheelUnsubscribe();
+  wheelUnsubscribe=db.collection("settings").doc("wheel").onSnapshot(doc=>{
+    wheelSettings=doc.exists?doc.data():null;
+    renderProducts();
+    updateSpinButton();
+    loadSpinRecord();
+    if(isAdmin) renderAdmin();
+  },err=>console.error("Wheel listener:",err));
+}
+function startAdminOrdersListener(){
+  if(ordersUnsubscribe) ordersUnsubscribe();
+  ordersUnsubscribe=db.collection("orders").orderBy("createdAt","desc").onSnapshot(snapshot=>{
+    orders=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
+    if(isAdmin) renderAdmin();
+  },err=>console.error("Orders listener:",err));
+}
+async function loadSpinRecord(){
+  spinRecord=null;
+  if(!wheelSettings) { updateSpinButton(); return; }
+  const key=getWeekKey()+"_"+guestId;
+  try{
+    const doc=await db.collection("spins").doc(key).get();
+    if(doc.exists) spinRecord=doc.data();
+  }catch(e){ console.error("Spin record:",e); }
+  updateSpinButton();
+  renderProducts();
 }
 
 function renderProducts(){
- let search=document.getElementById("search").value.toLowerCase();
- let list=products.filter(p=>
-  (category==="All"||p.category===category)&&
-  p.name.toLowerCase().includes(search)
- );
-
- document.getElementById("products").innerHTML=list.length?
- list.map(p=>`
- <div class="card">
-  ${p.newArrival?'<span class="badge new-badge">NEW ARRIVAL</span>':''}
-  ${discountFor(p.id)?'<span class="badge discount-badge">-'+discountFor(p.id)+'%</span>':''}
-  <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" onclick="openPhoto('${p.id}')">
-  <div class="card-info">
-   <h3 onclick="openPhoto('${p.id}')">${escapeHTML(p.name)}</h3>
-   <div class="pid">Product ID: ${escapeHTML(p.id)}</div>
-   <div class="price">${priceHTML(p)}</div>
-   <button class="yellow" onclick="addCart('${p.id}')">Add to Cart</button>
-   <button class="blue" onclick="buyNow('${p.id}')">Buy Now</button>
-  </div>
- </div>`).join(""):"<p>No products found.</p>";
-
- renderNewArrivals();
+  const search=document.getElementById("search").value.toLowerCase();
+  let list=products.filter(p=>(category==="All"||p.category===category)&&
+    String(p.name||"").toLowerCase().includes(search));
+  document.getElementById("products").innerHTML=list.length?list.map(p=>`
+    <div class="card">
+      ${p.newArrival?'<span class="badge new-badge">NEW ARRIVAL</span>':''}
+      ${discountFor(p.id)?'<span class="badge discount-badge">-'+discountFor(p.id)+'%</span>':''}
+      <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.name)}" onclick="openPhoto('${escapeHTML(p.id)}')">
+      <div class="card-info">
+        <h3 onclick="openPhoto('${escapeHTML(p.id)}')">${escapeHTML(p.name)}</h3>
+        <div class="pid">Product ID: ${escapeHTML(p.id)}</div>
+        <div class="price">${priceHTML(p)}</div>
+        <button class="yellow" onclick="addCart('${escapeHTML(p.id)}')">Add to Cart</button>
+        <button class="blue" onclick="buyNow('${escapeHTML(p.id)}')">Buy Now</button>
+      </div>
+    </div>`).join(""):"<p>No products found.</p>";
+  renderNewArrivals();
 }
-
 function renderNewArrivals(){
- let list=products.filter(p=>p.newArrival);
- let section=document.getElementById("newArrivalSection");
- section.classList.toggle("hidden",!list.length);
- document.getElementById("newArrivals").innerHTML=list.map(p=>`
- <div class="card">
-  <span class="badge new-badge">NEW ARRIVAL</span>
-  <img src="${escapeHTML(p.image)}" onclick="openPhoto('${p.id}')">
-  <div class="card-info">
-   <h3 onclick="openPhoto('${p.id}')">${escapeHTML(p.name)}</h3>
-   <div class="price">${priceHTML(p)}</div>
-   <button class="blue" onclick="buyNow('${p.id}')">Buy Now</button>
-  </div>
- </div>`).join("");
+  let list=products.filter(p=>p.newArrival);
+  document.getElementById("newArrivalSection").classList.toggle("hidden",!list.length);
+  document.getElementById("newArrivals").innerHTML=list.map(p=>`
+    <div class="card">
+      <span class="badge new-badge">NEW ARRIVAL</span>
+      <img src="${escapeHTML(p.image)}" onclick="openPhoto('${escapeHTML(p.id)}')">
+      <div class="card-info">
+        <h3 onclick="openPhoto('${escapeHTML(p.id)}')">${escapeHTML(p.name)}</h3>
+        <div class="price">${priceHTML(p)}</div>
+        <button class="blue" onclick="buyNow('${escapeHTML(p.id)}')">Buy Now</button>
+      </div>
+    </div>`).join("");
 }
-
 function setCategory(c,btn){
- category=c;
- document.querySelectorAll(".cat").forEach(b=>b.classList.remove("active"));
- btn.classList.add("active");
- renderProducts();
+  category=c;
+  document.querySelectorAll(".cat").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  renderProducts();
 }
 
 // PRODUCT DETAILS
 function openPhoto(id){
- detailProduct=products.find(p=>p.id===id);
- if(!detailProduct)return;
- detailQuantity=1;
- document.getElementById("detailName").innerText=detailProduct.name;
- document.getElementById("detailPrice").innerHTML=priceHTML(detailProduct);
- document.getElementById("detailID").innerText=detailProduct.id;
- document.getElementById("detailCategory").innerText=
- detailProduct.category==="Pokemon"?"Pokémon Cards":"Naruto Cards";
- document.getElementById("thumbFront").src=detailProduct.image;
- document.getElementById("thumbBack").src=detailProduct.back||detailProduct.image;
- document.getElementById("mainProductPhoto").src=detailProduct.image;
- document.getElementById("detailQty").innerText=1;
- document.getElementById("photoModal").style.display="block";
+  detailProduct=products.find(p=>p.id===id);
+  if(!detailProduct)return;
+  detailQuantity=1;
+  document.getElementById("detailName").innerText=detailProduct.name;
+  document.getElementById("detailPrice").innerHTML=priceHTML(detailProduct);
+  document.getElementById("detailID").innerText=detailProduct.id;
+  document.getElementById("detailCategory").innerText=detailProduct.category==="Pokemon"?"Pokémon Cards":"Naruto Cards";
+  document.getElementById("thumbFront").src=detailProduct.image;
+  document.getElementById("thumbBack").src=detailProduct.back||detailProduct.image;
+  document.getElementById("mainProductPhoto").src=detailProduct.image;
+  document.getElementById("detailQty").innerText=1;
+  document.getElementById("photoModal").style.display="block";
 }
-
 function switchPhoto(side){
- if(!detailProduct)return;
- document.getElementById("mainProductPhoto").src=
- side==="front"?detailProduct.image:(detailProduct.back||detailProduct.image);
+  if(!detailProduct)return;
+  document.getElementById("mainProductPhoto").src=side==="front"?detailProduct.image:(detailProduct.back||detailProduct.image);
 }
-
-function closePhoto(){document.getElementById("photoModal").style.display="none"}
+function closePhoto(){document.getElementById("photoModal").style.display="none";}
 function changeDetailQty(n){
- detailQuantity=Math.max(1,Math.min(20,detailQuantity+n));
- document.getElementById("detailQty").innerText=detailQuantity;
+  detailQuantity=Math.max(1,Math.min(20,detailQuantity+n));
+  document.getElementById("detailQty").innerText=detailQuantity;
 }
-
-function detailAddCart(){
- if(!detailProduct)return;
- addCart(detailProduct.id,detailQuantity);
- closePhoto();
-}
-function detailBuyNow(){
- if(!detailProduct)return;
- cart=[{...detailProduct,qty:detailQuantity}];
- updateCart();closePhoto();checkout();
-}
+function detailAddCart(){if(!detailProduct)return;addCart(detailProduct.id,detailQuantity);closePhoto();}
+function detailBuyNow(){if(!detailProduct)return;cart=[{...detailProduct,qty:detailQuantity}];updateCart();closePhoto();checkout();}
 
 // CART
 function addCart(id,qty=1){
- let p=products.find(x=>x.id===id);
- if(!p)return;
- let item=cart.find(x=>x.id===id);
- if(item)item.qty+=qty;
- else cart.push({...p,qty});
- updateCart();
- alert("Added to cart!");
+  let p=products.find(x=>x.id===id); if(!p)return;
+  let item=cart.find(x=>x.id===id);
+  if(item)item.qty+=qty; else cart.push({...p,qty});
+  updateCart();alert("Added to cart!");
 }
-
 function buyNow(id){
- let p=products.find(x=>x.id===id);
- if(!p)return;
- cart=[{...p,qty:1}];
- updateCart();checkout();
+  let p=products.find(x=>x.id===id);if(!p)return;
+  cart=[{...p,qty:1}];updateCart();checkout();
 }
-
-function updateCart(){
- document.getElementById("cartCount").innerText=cart.reduce((s,p)=>s+p.qty,0);
-}
-
-function showCart(){
- closePanels();
- document.getElementById("cartPanel").style.display="block";
- renderCart();
-}
-
+function updateCart(){document.getElementById("cartCount").innerText=cart.reduce((s,p)=>s+p.qty,0);}
+function showCart(){closePanels();document.getElementById("cartPanel").style.display="block";renderCart();}
 function renderCart(){
- document.getElementById("cartItems").innerHTML=cart.map(p=>{
-  let current=products.find(x=>x.id===p.id)||p;
-  let price=getPrice(current);
-  return `<div class="cart-item">
-   <div><b>${escapeHTML(p.name)}</b>
-   <p class="pid">${escapeHTML(p.id)}</p>
-   ${priceHTML(current)} × ${p.qty}</div>
-   <div>
-    <button class="yellow" onclick="changeQty('${p.id}',-1)">−</button>
-    <button class="yellow" onclick="changeQty('${p.id}',1)">+</button>
-    <button class="dark" onclick="removeItem('${p.id}')">✕</button>
-   </div>
-  </div>`;
- }).join("")||"<p>Your cart is empty.</p>";
-
- document.getElementById("cartTotal").innerText=
- "Total: ₹"+cart.reduce((s,p)=>{
-  let current=products.find(x=>x.id===p.id)||p;
-  return s+getPrice(current)*p.qty;
- },0);
+  document.getElementById("cartItems").innerHTML=cart.map(p=>{
+    let current=products.find(x=>x.id===p.id)||p, price=getPrice(current);
+    return `<div class="cart-item"><div><b>${escapeHTML(p.name)}</b><p class="pid">${escapeHTML(p.id)}</p>${priceHTML(current)} × ${p.qty}</div>
+      <div><button class="yellow" onclick="changeQty('${escapeHTML(p.id)}',-1)">−</button>
+      <button class="yellow" onclick="changeQty('${escapeHTML(p.id)}',1)">+</button>
+      <button class="dark" onclick="removeItem('${escapeHTML(p.id)}')">✕</button></div></div>`;
+  }).join("")||"<p>Your cart is empty.</p>";
+  document.getElementById("cartTotal").innerText="Total: ₹"+cart.reduce((s,p)=>{
+    let current=products.find(x=>x.id===p.id)||p;return s+getPrice(current)*p.qty;
+  },0);
 }
-
 function changeQty(id,n){
- let p=cart.find(x=>x.id===id);
- if(!p)return;
- p.qty+=n;
- if(p.qty<=0)removeItem(id);
- else renderCart();
- updateCart();
+  let p=cart.find(x=>x.id===id);if(!p)return;
+  p.qty+=n;if(p.qty<=0)removeItem(id);else renderCart();updateCart();
 }
-function removeItem(id){
- cart=cart.filter(p=>p.id!==id);
- updateCart();renderCart();
-}
+function removeItem(id){cart=cart.filter(p=>p.id!==id);updateCart();renderCart();}
 function checkout(){
- if(!cart.length){alert("Cart is empty!");return;}
- closePanels();
- document.getElementById("checkoutPanel").style.display="block";
+  if(!cart.length){alert("Cart is empty!");return;}
+  closePanels();document.getElementById("checkoutPanel").style.display="block";
 }
 
 // ORDERS
-document.getElementById("orderForm").addEventListener("submit",function(e){
- e.preventDefault();
- if(!cart.length)return;
-
- let orderItems=cart.map(p=>{
-  let current=products.find(x=>x.id===p.id)||p;
-  let unitPrice=getPrice(current);
-  return {...p,price:unitPrice,originalPrice:Number(current.price)};
- });
- let total=orderItems.reduce((s,p)=>s+p.price*p.qty,0);
-
- currentOrder={
-  orderID:"NP"+Date.now().toString().slice(-8),
-  customer:document.getElementById("customer").value.trim(),
-  phone:document.getElementById("phone").value.trim(),
-  address:document.getElementById("address").value.trim(),
-  city:document.getElementById("city").value.trim(),
-  pincode:document.getElementById("pincode").value.trim(),
-  items:orderItems,total,status:"Pending",
-  date:new Date().toLocaleString()
- };
-
- orders.unshift(currentOrder);
- saveOrders();
-
- document.getElementById("orderSummary").innerHTML=
- "Order ID: <b>"+escapeHTML(currentOrder.orderID)+"</b>"+
- "<br>Total: ₹"+total+
- "<br>Payment: Cash on Delivery"+
- "<br>Status: Pending";
-
- cart=[];updateCart();this.reset();closePanels();
- document.getElementById("successPanel").style.display="block";
+document.getElementById("orderForm").addEventListener("submit",async function(e){
+  e.preventDefault();if(!cart.length)return;
+  const submitButton=this.querySelector('button[type="submit"]');
+  submitButton.disabled=true;submitButton.innerText="Saving Order...";
+  try{
+    let orderItems=cart.map(p=>{
+      let current=products.find(x=>x.id===p.id)||p;
+      return {id:p.id,name:p.name,qty:p.qty,price:getPrice(current),originalPrice:Number(current.price)};
+    });
+    let total=orderItems.reduce((sum,p)=>sum+p.price*p.qty,0);
+    const orderID="NP"+Date.now().toString().slice(-8)+Math.floor(Math.random()*90+10);
+    currentOrder={
+      orderID,
+      customer:document.getElementById("customer").value.trim(),
+      phone:document.getElementById("phone").value.trim(),
+      address:document.getElementById("address").value.trim(),
+      city:document.getElementById("city").value.trim(),
+      pincode:document.getElementById("pincode").value.trim(),
+      items:orderItems,total,status:"Pending",
+      date:new Date().toLocaleString()
+    };
+    await db.collection("orders").doc(orderID).set({
+      ...currentOrder,createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    await db.collection("orderTracking").doc(orderID).set({
+      orderID,status:"Pending",total,date:currentOrder.date,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById("orderSummary").innerHTML=
+      "Order ID: <b>"+escapeHTML(orderID)+"</b><br>Total: ₹"+total+
+      "<br>Payment: Cash on Delivery<br>Status: Pending";
+    cart=[];updateCart();this.reset();closePanels();
+    document.getElementById("successPanel").style.display="block";
+  }catch(err){
+    console.error(err);alert("Order save nahi hua. Internet/Firebase Rules check karke dobara try karo.");
+  }finally{
+    submitButton.disabled=false;submitButton.innerText="Confirm COD Order";
+  }
 });
-
 function sendOrderWhatsApp(){
- if(!currentOrder)return;
- let o=currentOrder;
- let items=o.items.map(p=>
- p.name+" | ID: "+p.id+" | Qty: "+p.qty+" | ₹"+(p.price*p.qty)
- ).join("\n");
-
- let msg="NEW ORDER - NP CARDS STORE\n\n"+
- "Order ID: "+o.orderID+
- "\nCustomer: "+o.customer+
- "\nMobile: "+o.phone+
- "\n\nPRODUCTS:\n"+items+
- "\n\nTOTAL: ₹"+o.total+
- "\nPayment: Cash on Delivery"+
- "\n\nDELIVERY ADDRESS:\n"+o.address+
- "\n"+o.city+" - "+o.pincode;
- openWhatsApp(msg);
+  if(!currentOrder)return;
+  const o=currentOrder;
+  const items=o.items.map(p=>p.name+" | ID: "+p.id+" | Qty: "+p.qty+" | ₹"+(p.price*p.qty)).join("\n");
+  const msg="NEW ORDER - NP CARDS STORE\n\n"+
+    "Order ID: "+o.orderID+"\nCustomer: "+o.customer+
+    "\nMobile: "+o.phone+"\n\nPRODUCTS:\n"+items+
+    "\n\nTOTAL: ₹"+o.total+"\nPayment: Cash on Delivery"+
+    "\n\nDELIVERY ADDRESS:\n"+o.address+"\n"+o.city+" - "+o.pincode;
+  openWhatsApp(msg);
 }
-
 function openWhatsApp(message){
- if(!/^91[0-9]{10}$/.test(WHATSAPP_NUMBER)){
-  alert("Check WhatsApp number in configuration.");return;
- }
- window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent(message),"_blank");
+  if(!/^91[0-9]{10}$/.test(WHATSAPP_NUMBER)){alert("Check WhatsApp number in configuration.");return;}
+  window.open("https://wa.me/"+WHATSAPP_NUMBER+"?text="+encodeURIComponent(message),"_blank");
 }
 function contactSupport(){openWhatsApp("Hello NP Cards Store! I need help.");}
 
-// ORDER TRACKING
+// ORDER TRACKING — public reads only the limited tracking document
 function showTracking(){
- closePanels();
- document.getElementById("trackingPanel").style.display="block";
- document.getElementById("trackingResult").innerHTML="";
+  closePanels();document.getElementById("trackingPanel").style.display="block";
+  document.getElementById("trackingResult").innerHTML="";
+}
+async function trackOrder(){
+  let id=document.getElementById("trackID").value.trim().toUpperCase();
+  let result=document.getElementById("trackingResult");
+  if(!id){result.innerHTML="<p>Please enter Order ID.</p>";return;}
+  result.innerHTML="<p>Checking order...</p>";
+  try{
+    const doc=await db.collection("orderTracking").doc(id).get();
+    if(!doc.exists){result.innerHTML='<p style="color:#d94343;margin:15px 0">Order not found.</p>';return;}
+    const o=doc.data();
+    result.innerHTML=`<div class="order-card"><h3>Order ${escapeHTML(o.orderID)}</h3>
+      <p style="margin:10px 0">Date: ${escapeHTML(o.date||"")}</p>
+      <p class="status">Status: ${escapeHTML(o.status)}</p>
+      <p style="margin-top:10px">Total: ₹${Number(o.total)||0}</p>
+      <p class="notice">Payment: Cash on Delivery</p></div>`;
+  }catch(err){console.error(err);result.innerHTML="<p>Tracking unavailable. Please try again.</p>";}
 }
 
-function trackOrder(){
- let id=document.getElementById("trackID").value.trim().toUpperCase();
- let o=orders.find(x=>x.orderID.toUpperCase()===id);
- let result=document.getElementById("trackingResult");
- if(!o){
-  result.innerHTML='<p style="color:#d94343;margin:15px 0">Order not found in this browser.</p>';
-  return;
- }
- result.innerHTML=`
- <div class="order-card">
-  <h3>Order ${escapeHTML(o.orderID)}</h3>
-  <p style="margin:10px 0">Date: ${escapeHTML(o.date||"")}</p>
-  <p class="status">Status: ${escapeHTML(o.status)}</p>
-  <p style="margin-top:10px">Total: ₹${o.total}</p>
-  <p class="notice">Payment: Cash on Delivery</p>
- </div>`;
-}
-
-// ADMIN
+// ADMIN AUTH
 function showAdmin(){
- closePanels();
- document.getElementById("loginPanel").style.display="block";
-}
-function login(){
- if(document.getElementById("adminPass").value===ADMIN_PASSWORD){
   closePanels();
-  document.getElementById("adminPanel").style.display="block";
-  renderAdmin();
- }else alert("Wrong Password!");
+  if(isAdmin){document.getElementById("adminPanel").style.display="block";renderAdmin();}
+  else document.getElementById("loginPanel").style.display="block";
 }
-function logout(){
- closePanels();
- document.getElementById("adminPass").value="";
+async function login(){
+  const email=document.getElementById("adminEmail").value.trim();
+  const password=document.getElementById("adminPass").value;
+  if(!email||!password){alert("Admin email aur password enter karo.");return;}
+  try{
+    const credential=await auth.signInWithEmailAndPassword(email,password);
+    if(credential.user.uid!==ADMIN_UID){
+      await auth.signOut();alert("This account is not the authorized store admin.");return;
+    }
+    isAdmin=true;closePanels();document.getElementById("adminPanel").style.display="block";
+    startAdminOrdersListener();renderAdmin();
+  }catch(err){console.error(err);alert("Login failed. Email/password check karo.");}
+}
+async function logout(){
+  try{await auth.signOut();}catch(e){console.error(e);}
+  isAdmin=false;orders=[];
+  if(ordersUnsubscribe){ordersUnsubscribe();ordersUnsubscribe=null;}
+  closePanels();document.getElementById("adminEmail").value="";
+  document.getElementById("adminPass").value="";
 }
 function closePanels(){
- ["cartPanel","checkoutPanel","successPanel","trackingPanel","loginPanel","adminPanel"]
- .forEach(id=>document.getElementById(id).style.display="none");
+  ["cartPanel","checkoutPanel","successPanel","trackingPanel","loginPanel","adminPanel"]
+    .forEach(id=>document.getElementById(id).style.display="none");
 }
+auth.onAuthStateChanged(user=>{
+  isAdmin=!!(user&&user.uid===ADMIN_UID);
+  if(user&&!isAdmin)auth.signOut();
+  if(isAdmin){startAdminOrdersListener();}
+});
 
-// IMAGE UPLOAD
+// CLOUDINARY IMAGE UPLOAD
 async function readImage(file){
-  if(!file) return "";
-
-  if(!file.type.startsWith("image/")){
-    throw new Error("Select a valid image.");
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", "npcards");
-
-  const response = await fetch(
-    "https://api.cloudinary.com/v1_1/z20cxsy7/image/upload",
-    {
-      method: "POST",
-      body: formData
-    }
-  );
-
-  const data = await response.json();
-
-  if(!response.ok){
-    throw new Error(data.error?.message || "Cloudinary upload failed.");
-  }
-
+  if(!file)return "";
+  if(!file.type.startsWith("image/"))throw new Error("Select a valid image.");
+  const formData=new FormData();formData.append("file",file);formData.append("upload_preset","npcards");
+  const response=await fetch("https://api.cloudinary.com/v1_1/z20cxsy7/image/upload",{method:"POST",body:formData});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error?.message||"Cloudinary upload failed.");
   return data.secure_url;
- }
-
+}
 async function addProduct(){
- let name=document.getElementById("pname").value.trim();
- let price=Number(document.getElementById("pprice").value);
- let cat=document.getElementById("pcategory").value;
- let front=document.getElementById("pimage").files[0];
- let back=document.getElementById("pback").files[0];
-
- if(!name||!Number.isFinite(price)||price<=0||!front){
-  alert("Enter title, valid price and front photo.");return;
- }
- try{
-  let frontImage=await readImage(front);
-  let backImage=await readImage(back);
-  let p={
-   id:"NP"+Date.now().toString().slice(-8),
-   name,price,category:cat,image:frontImage,back:backImage,newArrival:false
-  };
-  products.unshift(p);
-  try{saveProducts()}catch(e){
-   products.shift();alert("Storage full! Use smaller photos.");return;
-  }
-  document.getElementById("pname").value="";
-  document.getElementById("pprice").value="";
-  document.getElementById("pimage").value="";
-  document.getElementById("pback").value="";
-  renderProducts();renderAdmin();
-  alert("Product uploaded successfully!");
- }catch(e){alert(e.message)}
+  if(!isAdmin){alert("Admin login required.");return;}
+  let name=document.getElementById("pname").value.trim();
+  let price=Number(document.getElementById("pprice").value);
+  let cat=document.getElementById("pcategory").value;
+  let front=document.getElementById("pimage").files[0];
+  let back=document.getElementById("pback").files[0];
+  if(!name||!Number.isFinite(price)||price<=0||!front){alert("Enter title, valid price and front photo.");return;}
+  try{
+    let frontImage=await readImage(front),backImage=await readImage(back);
+    let p={id:"NP"+Date.now().toString().slice(-8),name,price,category:cat,image:frontImage,back:backImage,newArrival:false};
+    await db.collection("products").doc(p.id).set(p);
+    document.getElementById("pname").value="";document.getElementById("pprice").value="";
+    document.getElementById("pimage").value="";document.getElementById("pback").value="";
+    alert("Product uploaded successfully!");
+  }catch(e){console.error(e);alert(e.message||"Product upload failed.");}
 }
-
 function renderAdmin(){
- document.getElementById("statProducts").innerText=products.length;
- document.getElementById("statOrders").innerText=orders.length;
- document.getElementById("statPending").innerText=orders.filter(o=>o.status==="Pending").length;
- document.getElementById("statNew").innerText=products.filter(p=>p.newArrival).length;
-
- document.getElementById("adminProducts").innerHTML=products.map(p=>`
- <div class="cart-item">
-  <div><b>${escapeHTML(p.name)}</b>
-   <p class="pid">${escapeHTML(p.id)} | ${escapeHTML(p.category)}</p>
-   ₹${p.price} ${p.newArrival?"| ✨ New Arrival":""}
-  </div>
-  <div>
-   <button class="blue" onclick="editProduct('${p.id}')">Edit</button>
-   <button class="yellow" onclick="toggleNew('${p.id}')">${p.newArrival?"Remove New":"Mark New"}</button>
-   <button class="dark" onclick="deleteProduct('${p.id}')">Delete</button>
-  </div>
- </div>`).join("")||"<p>No products.</p>";
-
- document.getElementById("adminOrders").innerHTML=orders.map(o=>`
- <div class="order-card">
-  <b>${escapeHTML(o.orderID)}</b>
-  <p>${escapeHTML(o.customer)} | ${escapeHTML(o.phone)}</p>
-  <p>Total: ₹${o.total} | ${escapeHTML(o.date||"")}</p>
-  <p>Current Status: <b class="status">${escapeHTML(o.status)}</b></p>
-  <select id="status_${o.orderID}">
-   ${["Pending","Confirmed","Shipped","Delivered","Cancelled"].map(s=>
-    `<option value="${s}" ${o.status===s?"selected":""}>${s}</option>`).join("")}
-  </select>
-  <button class="blue" onclick="updateOrderStatus('${o.orderID}')">Update Status</button>
- </div>`).join("")||"<p>No orders yet.</p>";
-
- renderWheelAdmin();
+  if(!isAdmin)return;
+  document.getElementById("statProducts").innerText=products.length;
+  document.getElementById("statOrders").innerText=orders.length;
+  document.getElementById("statPending").innerText=orders.filter(o=>o.status==="Pending").length;
+  document.getElementById("statNew").innerText=products.filter(p=>p.newArrival).length;
+  document.getElementById("adminProducts").innerHTML=products.map(p=>`
+    <div class="cart-item"><div><b>${escapeHTML(p.name)}</b>
+      <p class="pid">${escapeHTML(p.id)} | ${escapeHTML(p.category)}</p>
+      ₹${Number(p.price)} ${p.newArrival?"| ✨ New Arrival":""}</div>
+      <div><button class="blue" onclick="editProduct('${escapeHTML(p.id)}')">Edit</button>
+      <button class="yellow" onclick="toggleNew('${escapeHTML(p.id)}')">${p.newArrival?"Remove New":"Mark New"}</button>
+      <button class="dark" onclick="deleteProduct('${escapeHTML(p.id)}')">Delete</button></div></div>`).join("")||"<p>No products.</p>";
+  document.getElementById("adminOrders").innerHTML=orders.map(o=>`
+    <div class="order-card"><b>${escapeHTML(o.orderID)}</b>
+      <p>${escapeHTML(o.customer)} | ${escapeHTML(o.phone)}</p>
+      <p>Total: ₹${Number(o.total)||0} | ${escapeHTML(o.date||"")}</p>
+      <p>Current Status: <b class="status">${escapeHTML(o.status)}</b></p>
+      <select id="status_${escapeHTML(o.orderID)}">
+        ${["Pending","Confirmed","Shipped","Delivered","Cancelled"].map(st=>`<option value="${st}" ${o.status===st?"selected":""}>${st}</option>`).join("")}
+      </select>
+      <button class="blue" onclick="updateOrderStatus('${escapeHTML(o.orderID)}')">Update Status</button></div>`).join("")||"<p>No orders yet.</p>";
+  renderWheelAdmin();
 }
-
-function updateOrderStatus(id){
- let o=orders.find(x=>x.orderID===id);
- if(!o)return;
- o.status=document.getElementById("status_"+id).value;
- saveOrders();renderAdmin();
- alert("Order status updated!");
+async function updateOrderStatus(id){
+  if(!isAdmin)return;
+  let o=orders.find(x=>x.orderID===id);if(!o)return;
+  let status=document.getElementById("status_"+id).value;
+  try{
+    await db.collection("orders").doc(id).update({status});
+    await db.collection("orderTracking").doc(id).update({status});
+    alert("Order status updated!");
+  }catch(e){console.error(e);alert("Status update failed.");}
 }
-
-function toggleNew(id){
- let p=products.find(x=>x.id===id);
- if(!p)return;
- p.newArrival=!p.newArrival;
- saveProducts();renderProducts();renderAdmin();
+async function toggleNew(id){
+  if(!isAdmin)return;
+  let p=products.find(x=>x.id===id);if(!p)return;
+  try{await db.collection("products").doc(id).update({newArrival:!p.newArrival});}
+  catch(e){console.error(e);alert("Update failed.");}
 }
-
-function editProduct(id){
- let p=products.find(x=>x.id===id);
- if(!p)return;
- let name=prompt("Edit product title:",p.name);
- if(name===null)return;
- let price=prompt("Edit product price:",p.price);
- if(price===null)return;
- name=name.trim();price=Number(price);
- if(!name||!Number.isFinite(price)||price<=0){
-  alert("Invalid title or price.");return;
- }
- p.name=name;p.price=price;
- saveProducts();renderProducts();renderAdmin();
- alert("Product updated!");
+async function editProduct(id){
+  if(!isAdmin)return;
+  let p=products.find(x=>x.id===id);if(!p)return;
+  let name=prompt("Edit product title:",p.name);if(name===null)return;
+  let price=prompt("Edit product price:",p.price);if(price===null)return;
+  name=name.trim();price=Number(price);
+  if(!name||!Number.isFinite(price)||price<=0){alert("Invalid title or price.");return;}
+  try{await db.collection("products").doc(id).update({name,price});alert("Product updated!");}
+  catch(e){console.error(e);alert("Product update failed.");}
 }
-
-function deleteProduct(id){
- if(!confirm("Delete this product?"))return;
- products=products.filter(p=>p.id!==id);
- saveProducts();renderProducts();renderAdmin();
+async function deleteProduct(id){
+  if(!isAdmin||!confirm("Delete this product?"))return;
+  try{await db.collection("products").doc(id).delete();}
+  catch(e){console.error(e);alert("Delete failed.");}
 }
 
 // DISCOUNT WHEEL ADMIN
 function renderWheelAdmin(){
- let select=document.getElementById("wheelProduct");
- select.innerHTML=products.map(p=>
- `<option value="${p.id}">${escapeHTML(p.name)} - ₹${p.price}</option>`
- ).join("");
-
- if(wheelSettings){
-  select.value=wheelSettings.productId;
-  document.getElementById("wheelPercent").value=wheelSettings.percent;
-  document.getElementById("wheelActive").checked=wheelSettings.active&&wheelSettings.week===getWeekKey();
- }
- document.getElementById("wheelAdminInfo").innerText=
- wheelIsActive()?"Active this week. Product: "+(products.find(p=>p.id===wheelSettings.productId)?.name||"")+
- " | Discount: "+wheelSettings.percent+"%":"No active wheel for this week.";
-}
-
-function saveWheelSettings(){
- let productId=document.getElementById("wheelProduct").value;
- let percent=Number(document.getElementById("wheelPercent").value);
- let active=document.getElementById("wheelActive").checked;
-
- if(!products.some(p=>p.id===productId)){
-  alert("Please add a product first.");return;
- }
- if(!Number.isFinite(percent)||percent<1||percent>90){
-  alert("Enter discount between 1% and 90%.");return;
- }
- wheelSettings={productId,percent,active,week:getWeekKey()};
- saveWheel();
- renderWheelAdmin();renderProducts();renderAdmin();
- updateSpinButton();
- alert("Weekly Discount Wheel settings saved!");
-}
-
-// DISCOUNT WHEEL CUSTOMER
-function updateSpinButton(){
- document.getElementById("spinFloat").style.display=wheelIsActive()?"block":"none";
-}
-function openWheel(){
- if(!wheelIsActive()){alert("No active discount wheel right now.");return;}
- let p=products.find(x=>x.id===wheelSettings.productId);
- document.getElementById("wheelProductText").innerText=
- "Selected product: "+p.name+" | Current price ₹"+p.price;
- document.getElementById("wheelResult").innerText="";
- document.getElementById("wheelCircle").classList.remove("spinning");
- let already=hasSpunThisWeek();
- document.getElementById("spinButton").disabled=already;
- document.getElementById("spinButton").innerText=already?"Already Spun This Week":"🎡 SPIN NOW";
- if(already){
-  document.getElementById("wheelResult").innerText=
-  "Your discount: "+spinRecord.percent+"%";
- }
- document.getElementById("wheelModal").style.display="flex";
-}
-function closeWheel(){document.getElementById("wheelModal").style.display="none"}
-
-function spinWheel(){
- if(!wheelIsActive()){alert("This week's wheel is not active.");closeWheel();return;}
- if(hasSpunThisWeek()){alert("You have already spun this week.");return;}
-
- let btn=document.getElementById("spinButton");
- btn.disabled=true;
- document.getElementById("wheelCircle").classList.remove("spinning");
- void document.getElementById("wheelCircle").offsetWidth;
- document.getElementById("wheelCircle").classList.add("spinning");
-
- setTimeout(()=>{
-  spinRecord={week:getWeekKey(),percent:wheelSettings.percent,productId:wheelSettings.productId};
-  localStorage.setItem("np_spin_record",JSON.stringify(spinRecord));
-  document.getElementById("wheelResult").innerText=
-  "🎉 You won "+wheelSettings.percent+"% OFF!";
-  document.getElementById("wheelCircle").innerText=wheelSettings.percent+"% OFF";
-  btn.innerText="Discount Activated!";
-  renderProducts();
-  if(detailProduct&&detailProduct.id===wheelSettings.productId){
-   document.getElementById("detailPrice").innerHTML=priceHTML(detailProduct);
+  let select=document.getElementById("wheelProduct");
+  select.innerHTML=products.map(p=>`<option value="${escapeHTML(p.id)}">${escapeHTML(p.name)} - ₹${Number(p.price)}</option>`).join("");
+  if(wheelSettings){
+    select.value=wheelSettings.productId;
+    document.getElementById("wheelPercent").value=wheelSettings.percent;
+    document.getElementById("wheelActive").checked=!!wheelSettings.active&&wheelSettings.week===getWeekKey();
+  }else{
+    document.getElementById("wheelPercent").value="";
+    document.getElementById("wheelActive").checked=false;
   }
- },2600);
+  document.getElementById("wheelAdminInfo").innerText=wheelIsActive()
+    ?"Active this week. Product: "+(products.find(p=>p.id===wheelSettings.productId)?.name||"")+" | Discount: "+wheelSettings.percent+"%"
+    :"No active wheel for this week.";
+}
+async function saveWheelSettings(){
+  if(!isAdmin){alert("Admin login required.");return;}
+  let productId=document.getElementById("wheelProduct").value;
+  let percent=Number(document.getElementById("wheelPercent").value);
+  let active=document.getElementById("wheelActive").checked;
+  if(!products.some(p=>p.id===productId)){alert("Please add a product first.");return;}
+  if(!Number.isFinite(percent)||percent<1||percent>90){alert("Enter discount between 1% and 90%.");return;}
+  wheelSettings={productId,percent,active,week:getWeekKey()};
+  try{
+    await db.collection("settings").doc("wheel").set(wheelSettings);
+    alert("Weekly Discount Wheel settings saved!");
+  }catch(e){console.error(e);alert("Wheel settings save failed.");}
+}
+function updateSpinButton(){document.getElementById("spinFloat").style.display=wheelIsActive()?"block":"none";}
+function openWheel(){
+  if(!wheelIsActive()){alert("No active discount wheel right now.");return;}
+  let p=products.find(x=>x.id===wheelSettings.productId);
+  document.getElementById("wheelProductText").innerText="Selected product: "+p.name+" | Current price ₹"+p.price;
+  document.getElementById("wheelResult").innerText="";
+  document.getElementById("wheelCircle").classList.remove("spinning");
+  let already=hasSpunThisWeek();
+  document.getElementById("spinButton").disabled=already;
+  document.getElementById("spinButton").innerText=already?"Already Spun This Week":"🎡 SPIN NOW";
+  if(already)document.getElementById("wheelResult").innerText="Your discount: "+spinRecord.percent+"%";
+  document.getElementById("wheelModal").style.display="flex";
+}
+function closeWheel(){document.getElementById("wheelModal").style.display="none";}
+async function spinWheel(){
+  if(!wheelIsActive()){alert("This week's wheel is not active.");closeWheel();return;}
+  if(hasSpunThisWeek()){alert("You have already spun this week.");return;}
+  let btn=document.getElementById("spinButton");btn.disabled=true;
+  document.getElementById("wheelCircle").classList.remove("spinning");
+  void document.getElementById("wheelCircle").offsetWidth;
+  document.getElementById("wheelCircle").classList.add("spinning");
+  setTimeout(async()=>{
+    const record={week:getWeekKey(),percent:wheelSettings.percent,productId:wheelSettings.productId,guestId};
+    try{
+      await db.collection("spins").doc(getWeekKey()+"_"+guestId).set(record);
+      spinRecord=record;
+      document.getElementById("wheelResult").innerText="🎉 You won "+record.percent+"% OFF!";
+      document.getElementById("wheelCircle").innerText=record.percent+"% OFF";
+      btn.innerText="Discount Activated!";
+      renderProducts();
+      if(detailProduct&&detailProduct.id===wheelSettings.productId)
+        document.getElementById("detailPrice").innerHTML=priceHTML(detailProduct);
+    }catch(e){
+      console.error(e);btn.disabled=false;btn.innerText="🎡 SPIN NOW";
+      alert("Spin save nahi hua. Please try again.");
+    }
+  },2600);
 }
 
 // INITIAL LOAD
-renderProducts();
+startFirebaseListeners();
 updateCart();
-updateSpinButton();
+
 </script>
 </body>
  </html>
