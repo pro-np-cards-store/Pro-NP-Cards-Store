@@ -10,7 +10,9 @@
 body{font-family:Arial;background:#f5f6f8;color:#222}
 button{border:0;padding:12px;border-radius:7px;font-weight:bold;cursor:pointer}
 header{background:#172337;color:white;padding:16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.logo{font-size:23px;font-weight:bold;color:#40c9ff}
+.logo{display:flex;align-items:center;gap:10px;font-size:23px;font-weight:bold;color:#40c9ff;min-width:0}
+.logo img{width:64px;height:64px;object-fit:cover;border-radius:12px;border:2px solid #40c9ff}
+@media(max-width:650px){.logo img{width:52px;height:52px}.logo{font-size:19px}}
 .search{padding:12px;border-radius:7px;border:0;flex:1;min-width:150px}
 .blue{background:#168bd1;color:white}
 .yellow{background:#ffbd32;color:#111}
@@ -150,7 +152,7 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 
 
 <header>
- <div class="logo">NP Cards Store</div>
+ <div class="logo"><img src="naruto-pokemon-logo.png" alt="Naruto and Pokémon logo">NP Cards Store</div>
  <input class="search" id="search" placeholder="Search cards..." oninput="renderProducts()">
  <button class="yellow" onclick="showCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
  <button class="dark" onclick="showTracking()">📦 Track Order</button>
@@ -345,7 +347,7 @@ footer{text-align:center;background:#172337;color:white;padding:25px;margin-top:
 <script>
 // NP CARDS STORE — FIREBASE EDITION
 const WHATSAPP_NUMBER = "918976034412";
-const ADMIN_UID = "ieCZF8pgybTR7nj22m4hpBconqc2";
+const ADMIN_UID = "7VQdj4tIUrMgOiGjmJX3NAIDFm22";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCHG84QiePF3OO56AYmagui4eFlwnPSBXQ",
